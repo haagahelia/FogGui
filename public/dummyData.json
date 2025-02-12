@@ -1,0 +1,59 @@
+{
+    "hosts": [
+      {
+        "id": 1,
+        "name": "Lab-PC-01",
+        "mac": "00:1A:2B:3C:4D:5E",
+        "image": "Windows 10",
+        "status": "online"
+      },
+      {
+        "id": 2,
+        "name": "Lab-PC-02",
+        "mac": "00:1A:2B:3C:4D:5F",
+        "image": "Ubuntu 20.04",
+        "status": "offline"
+      }
+    ],
+    "groups": [
+      {
+        "id": 1,
+        "name": "Labraluokka A",
+        "hostCount": 20
+      },
+      {
+        "id": 2,
+        "name": "Labraluokka B",
+        "hostCount": 15
+      }
+    ],
+    "images": [
+      {
+        "id": 1,
+        "name": "Windows 10",
+        "sizeGB": 25.4
+      },
+      {
+        "id": 2,
+        "name": "Ubuntu 20.04",
+        "sizeGB": 15.7
+      }
+    ],
+    "deployments": [
+      {
+        "id": 101,
+        "hostId": 1,
+        "image": "Windows 10",
+        "status": "in-progress",
+        "progress": 45
+      },
+      {
+        "id": 102,
+        "hostId": 2,
+        "image": "Ubuntu 20.04",
+        "status": "completed",
+        "progress": 100
+      }
+    ]
+  }
+  
