@@ -1,59 +1,124 @@
+
+
 {
-    "hosts": [
+  "count": 1,
+  "hosts": [
       {
-        "id": 1,
-        "name": "Lab-PC-01",
-        "mac": "00:1A:2B:3C:4D:5E",
-        "image": "Windows 10",
-        "status": "online"
-      },
-      {
-        "id": 2,
-        "name": "Lab-PC-02",
-        "mac": "00:1A:2B:3C:4D:5F",
-        "image": "Ubuntu 20.04",
-        "status": "offline"
+          "id": 1,
+          "name": "08002795bd8f",
+          "description": "Created by FOG Reg on February 12, 2025, 8:43 am",
+          "ip": "",
+          "imageID": 1,
+          "building": 0,
+          "createdTime": "2025-02-12 08:43:13",
+          "deployed": "0000-00-00 00:00:00",
+          "createdBy": "fog",
+          "useAD": "",
+          "ADDomain": "",
+          "ADOU": "",
+          "ADUser": "",
+          "ADPass": "",
+          "ADPassLegacy": "",
+          "productKey": "",
+          "printerLevel": "",
+          "kernelArgs": "",
+          "kernel": "",
+          "kernelDevice": "",
+          "init": "",
+          "pending": "",
+          "pub_key": "",
+          "sec_tok": "",
+          "sec_time": "0000-00-00 00:00:00",
+          "pingstatus": "<i class=\"icon-ping-down fa fa-exclamation-circle red\" data-toggle=\"tooltip\" data-placement=\"right\" title=\"Unknown\"></i>",
+          "biosexit": "",
+          "efiexit": "",
+          "enforce": "",
+          "token": "f31fa7885e4c9b5525103a802c4a9c198efeff4e4c6ec4c01ae96f6d84298c9ebd0cf3052239aa900bab54e249848b73eec4f33c8ee846cc545e8443c8e0fc19",
+          "tokenlock": 0,
+          "primac": "08:00:27:95:bd:8f",
+          "imagename": "Ubuntu testi",
+          "hostscreen": {
+              "id": null,
+              "hostID": null,
+              "width": null,
+              "height": null,
+              "refresh": null,
+              "orientation": null,
+              "other1": null,
+              "other2": null
+          },
+          "hostalo": {
+              "id": null,
+              "hostID": null,
+              "time": null
+          },
+          "inventory": {
+              "id": 1,
+              "hostID": 1,
+              "primaryUser": "",
+              "other1": "",
+              "other2": "",
+              "createdTime": "2025-02-12 08:43:25",
+              "deleteDate": "0000-00-00 00:00:00",
+              "sysman": "innotek GmbH",
+              "sysproduct": "VirtualBox",
+              "sysversion": "1.2",
+              "sysserial": "VirtualBox-2b24aad6-2ce9-4555-9701-7d93a480c50e",
+              "sysuuid": "d6aa242b-e92c-5545-9701-7d93a480c50e",
+              "systype": "Type: Other",
+              "biosversion": "VirtualBox",
+              "biosvendor": "innotek GmbH",
+              "biosdate": "12/01/2006",
+              "mbman": "Oracle Corporation",
+              "mbproductname": "VirtualBox",
+              "mbversion": "1.2",
+              "mbserial": "0",
+              "mbasset": "Not Specified",
+              "cpuman": "",
+              "cpuversion": "",
+              "cpucurrent": "",
+              "cpumax": "",
+              "mem": "MemTotal: 2023784 kB",
+              "hdmodel": "VBOX HARDDISK",
+              "hdserial": "VB8ab6c758-1eced72c",
+              "hdfirmware": "1.0",
+              "caseman": "Oracle Corporation",
+              "casever": "Not Specified",
+              "caseserial": "Not Specified",
+              "caseasset": "Not Specified",
+              "gpuvendors": "VMware",
+              "gpuproducts": "SVGA II Adapter",
+              "memory": "1.93 GiB"
+          },
+          "image": {
+              "imageTypeID": 1,
+              "imagePartitionTypeID": 1,
+              "id": 1,
+              "name": "Ubuntu testi",
+              "description": "",
+              "path": "Ubuntutesti",
+              "createdTime": "2025-02-12 08:53:01",
+              "createdBy": "fog",
+              "building": 0,
+              "size": "1048576.000000:51415.000000:210595840.000000:105903030272.000000:",
+              "osID": 50,
+              "deployed": "2025-02-12 11:27:37",
+              "format": "5",
+              "magnet": "",
+              "protected": 0,
+              "compress": 6,
+              "isEnabled": "1",
+              "toReplicate": "1",
+              "srvsize": 1978310820,
+              "os": {},
+              "imagepartitiontype": {},
+              "imagetype": {}
+          },
+          "pingstatuscode": 6,
+          "pingstatustext": "No such device or address",
+          "macs": [
+              "08:00:27:95:bd:8f"
+          ]
       }
-    ],
-    "groups": [
-      {
-        "id": 1,
-        "name": "Labraluokka A",
-        "hostCount": 20
-      },
-      {
-        "id": 2,
-        "name": "Labraluokka B",
-        "hostCount": 15
-      }
-    ],
-    "images": [
-      {
-        "id": 1,
-        "name": "Windows 10",
-        "sizeGB": 25.4
-      },
-      {
-        "id": 2,
-        "name": "Ubuntu 20.04",
-        "sizeGB": 15.7
-      }
-    ],
-    "deployments": [
-      {
-        "id": 101,
-        "hostId": 1,
-        "image": "Windows 10",
-        "status": "in-progress",
-        "progress": 45
-      },
-      {
-        "id": 102,
-        "hostId": 2,
-        "image": "Ubuntu 20.04",
-        "status": "completed",
-        "progress": 100
-      }
-    ]
-  }
-  
+  ]
+}
