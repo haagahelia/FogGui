@@ -1,0 +1,17 @@
+{
+    "count": 1,
+    "groups": [
+        {
+            "id": 1,
+            "name": "testgroup",
+            "description": "",
+            "createdBy": "fog",
+            "createdTime": "2025-02-26 10:03:12",
+            "building": 0,
+            "kernel": "",
+            "kernelArgs": "",
+            "kernelDevice": "",
+            "hostcount": 1
+        }
+    ]
+}
