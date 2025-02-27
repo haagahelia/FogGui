@@ -1,19 +1,30 @@
-'use client'
-import { useRouter } from 'next/navigation'
-import React, { useEffect, useState } from 'react';
-import { Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Box } from '@mui/material';
+"use client";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import {
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Typography,
+  Box,
+} from "@mui/material";
 
 const Dashboard = () => {
-
   const router = useRouter();
-  
-  const [data, setData] = useState<any>({ hosts: [] }); 
+
+  const [data, setData] = useState<any>({ hosts: [] });
 
   useEffect(() => {
     const fetchData = async () => {
-      const response = await fetch('/dummyData.json');
+      const response = await fetch("/dummyData.json");
       const jsonData = await response.json();
-      setData(jsonData); 
+      setData(jsonData);
+      console.log(jsonData);
     };
 
     fetchData();
@@ -21,25 +32,33 @@ const Dashboard = () => {
 
   return (
     <Box
-        display="flex"
-        flexDirection="column"
-        alignItems="center"
-        justifyContent="center"
-        sx={{ border: '3px solid #ccc', padding: 5, borderRadius: 2 }}
-      >
-      <h1>
-        Dashboard
-      </h1>
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      sx={{ border: "3px solid #ccc", padding: 5, borderRadius: 2 }}
+    >
+      <h1>Dashboard</h1>
       {data.hosts?.length > 0 ? (
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell><strong>ID</strong></TableCell>
-                <TableCell><strong>Name</strong></TableCell>
-                <TableCell><strong>MAC Address</strong></TableCell>
-                <TableCell><strong>Image</strong></TableCell>
-                <TableCell><strong>Status</strong></TableCell>
+                <TableCell>
+                  <strong>ID</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Name</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>MAC Address</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Image</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Status</strong>
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -47,11 +66,9 @@ const Dashboard = () => {
                 <TableRow key={host.id}>
                   <TableCell>{host.id}</TableCell>
                   <TableCell>{host.name}</TableCell>
-                  <TableCell>{host.mac}</TableCell>
-                  <TableCell>
-                    {host.image}
-                  </TableCell>
-                  <TableCell>{host.status}</TableCell>
+                  <TableCell>{host.macs[0]}</TableCell>
+                  <TableCell>{host.image.name}</TableCell>
+                  <TableCell>{host.pingstatuscode}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -60,9 +77,8 @@ const Dashboard = () => {
       ) : (
         <Typography variant="body1">No hosts available.</Typography>
       )}
-      <Button onClick={() => router.push('/')}>Logout</Button>
+      <Button onClick={() => router.push("/")}>Logout</Button>
     </Box>
-    
   );
 };
 
