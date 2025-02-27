@@ -13,6 +13,7 @@ import {
   Typography,
   Box,
 } from "@mui/material";
+import FogTest from "@/components/FogTest";
 
 const Dashboard = () => {
   const router = useRouter();
@@ -31,6 +32,7 @@ const Dashboard = () => {
   }, []);
 
   return (
+    <div>
     <Box
       display="flex"
       flexDirection="column"
@@ -79,6 +81,8 @@ const Dashboard = () => {
       )}
       <Button onClick={() => router.push("/")}>Logout</Button>
     </Box>
+    <FogTest />
+    </div>
   );
 };
 
