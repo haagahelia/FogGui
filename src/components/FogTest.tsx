@@ -20,8 +20,14 @@ const FogTest = () => {
 
         const jsonData = await response.json();
         setData(jsonData);
+
+        // Log the fetched data to the console
+        console.log("Fetched data:", jsonData);
       } catch (err: any) {
         setError(err.message);
+
+        // Log the error to the console
+        console.error("Error fetching data:", err);
       }
     };
 
@@ -32,6 +38,7 @@ const FogTest = () => {
     <div>
       <h2>FOG API Test</h2>
       {error && <p style={{ color: "red" }}>Error: {error}</p>}
+      
       <pre>{JSON.stringify(data, null, 2)}</pre>
     </div>
   );
