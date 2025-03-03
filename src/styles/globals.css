@@ -2,9 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
-
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.button-primary {
+  @apply mt-4;
+  background-color: #3B82F6 !important; 
+  color: #ffffff !important;
+  font-weight: bold;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  width: 20%;
+}
+
+.button-primary:hover {
+  background-color: #1D4ED8 !important; 
+}
+
+.button-login {
+  @apply mt-4;
+  background-color: #3B82F6 !important; 
+  color: #ffffff !important;
+  font-weight: bold;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+}
+
+.button-login:hover {
+  background-color: #1D4ED8 !important; 
+}
+
+.table-container {
+  margin-bottom: 1rem; 
 }
