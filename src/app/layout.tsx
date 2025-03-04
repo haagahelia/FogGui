@@ -1,4 +1,6 @@
 import "./../styles/globals.css";
+import MenuBar from "@/components/MenuBar";
+import MenubarWrapper from "@/components/MenubarWrapper";
 
 export default function RootLayout({
   children,
@@ -8,7 +10,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        {children}
+        <MenubarWrapper />
+        <main>{children}</main>
       </body>
     </html>
   );
