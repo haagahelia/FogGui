@@ -52,7 +52,7 @@ export default function Login() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <Button variant="contained" color="primary" fullWidth sx={{ marginTop: 2 }} onClick={handleLogin} >
+        <Button className='button-login' onClick={handleLogin} >
           Login
         </Button>
       </Box>

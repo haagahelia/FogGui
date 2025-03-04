@@ -40,7 +40,7 @@ const Dashboard = () => {
     >
       <h1>Dashboard</h1>
       {data.hosts?.length > 0 ? (
-        <TableContainer component={Paper}>
+        <TableContainer component={Paper} className="table-container">
           <Table>
             <TableHead>
               <TableRow>
@@ -77,7 +77,7 @@ const Dashboard = () => {
       ) : (
         <Typography variant="body1">No hosts available.</Typography>
       )}
-      <Button onClick={() => router.push("/")}>Logout</Button>
+      <Button className="button-primary" onClick={() => router.push("/")}>Logout</Button>
     </Box>
   );
 };

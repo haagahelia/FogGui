@@ -47,7 +47,7 @@ export default function Groups() {
     >
       <h1>Groups</h1>
       {data.groups?.length > 0 ? (
-        <TableContainer component={Paper}>
+        <TableContainer component={Paper} className="table-container">
           <Table>
             <TableHead>
               <TableRow>
@@ -84,7 +84,9 @@ export default function Groups() {
       ) : (
         <Typography variant="body1">No groups available.</Typography>
       )}
-      <Button variant="contained" color="primary" sx={{ marginTop: 2 }} onClick={() => router.push("/dashboard")}>Back</Button>
+      <Button className="button-primary" onClick={() => router.push("/dashboard")}>
+        Back
+      </Button>
     </Box>
   );
 };
