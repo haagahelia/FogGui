@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Container, TextField, Button, Typography, Box } from '@mui/material';
 import { useRouter } from 'next/navigation';
 
@@ -9,6 +9,7 @@ export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const passwordRef = useRef<HTMLInputElement>(null);
 
   const handleLogin = () => {
     if (username === 'fog' && password === 'fog') {
@@ -42,6 +43,11 @@ export default function Login() {
           fullWidth
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              passwordRef.current?.focus();
+            }
+          }}
         />
         <TextField
           label="Password"
@@ -50,9 +56,15 @@ export default function Login() {
           margin="normal"
           fullWidth
           value={password}
+          inputRef={passwordRef}
           onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              handleLogin();
+            }
+          }}
         />
-        <Button className='button-login' onClick={handleLogin} >
+        <Button type='submit' className='button-login' onClick={handleLogin} >
           Login
         </Button>
       </Box>
