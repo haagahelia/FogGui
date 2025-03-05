@@ -30,6 +30,35 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
+  const handleDelete = async (hostId: number) => {
+    const confirmDelete = confirm(`Are you sure you want to delete host ${hostId}?`);
+    if (!confirmDelete) return;
+
+    try {
+      const response = await fetch("/api/hosts", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ hostId }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete host");
+      }
+
+      // Remove the deleted host from state
+      setData((prevData: any) => ({
+        hosts: prevData.hosts.filter((host: any) => host.id !== hostId),
+      }));
+
+      alert("Host deleted successfully.");
+    } catch (error) {
+      console.error(error);
+      alert("Error deleting host.");
+    }
+  };
+
   return (
     <Box
       display="flex"
@@ -59,6 +88,9 @@ const Dashboard = () => {
                 <TableCell>
                   <strong>Status</strong>
                 </TableCell>
+                <TableCell>
+                  <strong>Actions</strong>
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -69,6 +101,15 @@ const Dashboard = () => {
                   <TableCell>{host.macs[0]}</TableCell>
                   <TableCell>{host.image.name}</TableCell>
                   <TableCell>{host.pingstatuscode}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="contained"
+                      color="error"
+                      onClick={() => handleDelete(host.id)}
+                    >
+                      Delete
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
