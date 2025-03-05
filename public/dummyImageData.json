@@ -1,0 +1,45 @@
+{
+    "count": 1,
+    "images": [
+        {
+            "imageTypeID": 1,
+            "imagePartitionTypeID": 1,
+            "id": 1,
+            "name": "Ubuntu testi",
+            "description": "",
+            "path": "Ubuntutesti",
+            "createdTime": "2025-02-12 08:53:01",
+            "createdBy": "fog",
+            "building": 0,
+            "size": "1048576.000000:51415.000000:210595840.000000:105903030272.000000:",
+            "osID": 50,
+            "deployed": "2025-02-12 11:27:37",
+            "format": "5",
+            "magnet": "",
+            "protected": 0,
+            "compress": 6,
+            "isEnabled": "1",
+            "toReplicate": "1",
+            "srvsize": 1978310820,
+            "os": {
+                "id": 50,
+                "name": "Linux",
+                "description": ""
+            },
+            "imagepartitiontype": {
+                "id": 1,
+                "name": "Everything",
+                "type": "all"
+            },
+            "imagetype": {
+                "id": 1,
+                "name": "Single Disk - Resizable",
+                "type": "n"
+            },
+            "imagetypename": "Single Disk - Resizable",
+            "imageparttypename": "Everything",
+            "osname": "Linux",
+            "storagegroupname": "default"
+        }
+    ]
+}
