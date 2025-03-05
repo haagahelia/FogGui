@@ -13,9 +13,12 @@
     "@emotion/styled": "^11.14.0",
     "@mui/material": "^6.4.5",
     "fogproject": "file:",
+    "install": "^0.13.0",
     "next": "15.1.6",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

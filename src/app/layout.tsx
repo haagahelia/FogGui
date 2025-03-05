@@ -1,6 +1,7 @@
 import "./../styles/globals.css";
 import MenuBar from "@/components/MenuBar";
 import MenubarWrapper from "@/components/MenubarWrapper";
+import { db } from "./api/database";
 
 export default function RootLayout({
   children,
