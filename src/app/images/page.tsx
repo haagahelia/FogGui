@@ -1,48 +1,56 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Typography,
-  Box,
-  Link,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Paper,
+    Typography,
+    Box,
+    Link,
 } from "@mui/material";
 
 export default function Images() {
 
     const [data, setData] = useState<any>({ images: [] });
-    
-      useEffect(() => {
-        const fetchData = async () => {
-          const response = await fetch("/dummyImageData.json");
-          const jsonData = await response.json();
-      
-          jsonData.images = jsonData.images.map((image: any) => {
-            // Format the date
-            const date = new Date(image.createdTime);
-            const formattedDate = `${String(date.getDate()).padStart(2, '0')}-
-                ${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
 
-            // Format the image size
-            const sizes = image.size.split(":").filter((s: string) => s !== "");
-            const lastValue = sizes[sizes.length - 1] || "0";
-            const sizeBytes = parseFloat(lastValue);
-            const sizeGiB = (sizeBytes / Math.pow(1024, 3)).toFixed(2);
-            
-            return { ...image, createdTime: formattedDate, sizeGiB };
-          });
-      
-          setData(jsonData);
-          console.log(jsonData);
+    useEffect(() => {
+        const fetchData = async () => {
+            const response = await fetch("/dummyImageData.json");
+            const jsonData = await response.json();
+
+            jsonData.images = jsonData.images.map(formatImageData);
+
+            setData(jsonData);
+            console.log(jsonData);
         };
-      
+
         fetchData();
-      }, []);
+    }, []);
+
+    // Formating image data
+    const formatImageData = (image: any) => {
+        const formattedDate = formatDate(image.createdTime);
+        const sizeGiB = formatSize(image.size);
+        return { ...image, createdTime: formattedDate, sizeGiB };
+    };
+
+    // Formated date to DD-MM-YYYY
+    const formatDate = (createdTime: string) => {
+        const date = new Date(createdTime);
+        return `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
+    };
+
+    // Formated size to GiB
+    const formatSize = (size: string) => {
+        const sizes = size.split(":").filter((s: string) => s !== "");
+        const lastValue = sizes[sizes.length - 1] || "0";
+        const sizeBytes = parseFloat(lastValue);
+        return (sizeBytes / Math.pow(1024, 3)).toFixed(2);
+    };
 
     return (
         <Box
@@ -65,7 +73,7 @@ export default function Images() {
                                     <strong>Storage Group</strong>
                                 </TableCell>
                                 <TableCell>
-                                    <strong>Image Size:<br/>ON CLIENT</strong>
+                                    <strong>Image Size:<br />ON CLIENT</strong>
                                 </TableCell>
                                 <TableCell>
                                     <strong>Captured</strong>
