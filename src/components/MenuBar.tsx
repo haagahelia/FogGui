@@ -16,6 +16,9 @@ const MenuBar = () => {
             <Link href="/groups" className="hover:text-gray-400">Groups</Link>
           </li>
           <li>
+            <Link href="/images" className="hover:text-gray-400">Images</Link>
+          </li>
+          <li>
             <Link href="/" className="hover:text-red-400">Logout</Link> {/* Goes back to login */}
           </li>
         </ul>
