@@ -1,8 +1,6 @@
 "use client";
-import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import {
-  Button,
   Table,
   TableBody,
   TableCell,
@@ -15,7 +13,6 @@ import {
 } from "@mui/material";
 
 export default function Groups() {
-  const router = useRouter();
 
   const [data, setData] = useState<any>({ groups: [] });
 
@@ -84,9 +81,6 @@ export default function Groups() {
       ) : (
         <Typography variant="body1">No groups available.</Typography>
       )}
-      <Button className="button-primary" onClick={() => router.push("/dashboard")}>
-        Back
-      </Button>
     </Box>
   );
 };
