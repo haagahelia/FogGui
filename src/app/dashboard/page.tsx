@@ -1,5 +1,4 @@
 "use client";
-import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import {
   Button,
@@ -15,7 +14,6 @@ import {
 } from "@mui/material";
 
 const Dashboard = () => {
-  const router = useRouter();
 
   const [data, setData] = useState<any>({ hosts: [] });
 
@@ -118,7 +116,6 @@ const Dashboard = () => {
       ) : (
         <Typography variant="body1">No hosts available.</Typography>
       )}
-      <Button className="button-primary" onClick={() => router.push("/")}>Logout</Button>
     </Box>
   );
 };
