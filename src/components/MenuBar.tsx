@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { signOut } from 'next-auth/react';
 
 const MenuBar = () => {
   return (
@@ -22,7 +23,7 @@ const MenuBar = () => {
             <Link href="/tasks" className="hover:text-gray-400">Tasks</Link>
           </li>
           <li>
-            <Link href="/" className="hover:text-red-400">Logout</Link> {/* Goes back to login */}
+            <Link href="/" className="hover:text-red-400" onClick={() => signOut({callbackUrl: '/'})}>Logout</Link> {/* Goes back to login */}
           </li>
         </ul>
       </div>
