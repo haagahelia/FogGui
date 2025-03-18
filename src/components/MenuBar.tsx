@@ -14,6 +14,9 @@ const MenuBar = () => {
             <Link href="/dashboard" className="hover:text-gray-400">Dashboard</Link>
           </li>
           <li>
+            <Link href="/hosts" className="hover:text-gray-400">Hosts</Link>
+          </li>
+          <li>
             <Link href="/groups" className="hover:text-gray-400">Groups</Link>
           </li>
           <li>
