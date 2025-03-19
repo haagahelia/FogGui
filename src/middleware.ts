@@ -8,7 +8,7 @@ export default async function middleware(req: any) {
   console.log('Middleware - Path:', pathname);
 
   // List of protected routes
-  const protectedRoutes = ['/dashboard', '/images', '/groups'];
+  const protectedRoutes = ['/dashboard', '/hosts', '/images', '/groups'];
 
   // Check if the user is trying to access a protected route
   if (protectedRoutes.some((route) => pathname.startsWith(route))) {
