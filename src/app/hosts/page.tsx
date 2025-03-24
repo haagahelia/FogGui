@@ -19,14 +19,32 @@ export default function Hosts() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const response = await fetch("/dummyData.json");
-      const jsonData = await response.json();
-      setData(jsonData);
-      console.log(jsonData);
+      try {
+        // Using dummy data for now (GitHub version)
+        const response = await fetch("/dummyData.json");
+        const jsonData = await response.json();
+        setData(jsonData);
+        console.log("Using dummy data:", jsonData);
+
+        // Uncomment this and remove above stuff when using the real API
+        /*
+        const response = await fetch("/api/hosts");
+        if (!response.ok) {
+          throw new Error(`Failed to fetch hosts: ${response.statusText}`);
+        }
+
+        const jsonData = await response.json();
+        setData({ hosts: jsonData.hosts });
+        */
+      } catch (error) {
+        console.error("Error fetching hosts:", error);
+        alert("Failed to load hosts.");
+      }
     };
 
     fetchData();
   }, []);
+
 
   const handleDelete = async (hostId: number) => {
     const confirmDelete = confirm(`Are you sure you want to delete host ${hostId}?`);
