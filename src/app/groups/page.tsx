@@ -16,19 +16,36 @@ export default function Groups() {
 
   const [data, setData] = useState<any>({ groups: [] });
 
+  const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true";
+
   useEffect(() => {
     const fetchData = async () => {
-      const response = await fetch("/dummyGroupData.json");
-      const jsonData = await response.json();
+      try {
+        const endpoint = useDummyData ? "/dummyGroupData.json" : "/api/groups";
+        const response = await fetch(endpoint);
   
-      jsonData.groups = jsonData.groups.map((group: any) => {
-        const date = new Date(group.createdTime);
-        const formattedDate = `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
-        return { ...group, createdTime: formattedDate };
-      });
+        if (!response.ok) {
+          throw new Error(`Failed to fetch data: ${response.statusText}`);
+        }
   
-      setData(jsonData);
-      console.log(jsonData);
+        const jsonData = await response.json();
+  
+        if (!jsonData.groups || !Array.isArray(jsonData.groups)) {
+          console.error("Groups data is missing:", jsonData);
+          return;
+        }
+  
+        jsonData.groups = jsonData.groups.map((group: any) => {
+          const date = new Date(group.createdTime);
+          const formattedDate = `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
+          return { ...group, createdTime: formattedDate };
+        });
+  
+        setData(jsonData);
+      } catch (error) {
+        console.error("Error fetching groups:", error);
+        alert("Failed to load groups.");
+      }
     };
   
     fetchData();

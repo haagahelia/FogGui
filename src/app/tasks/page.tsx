@@ -19,23 +19,37 @@ export default function Tasks() {
 
     const [data, setData] = useState<any>({ tasks: [] });
 
-    useEffect(() => {
-        const fetchData = async () => {
-            const response = await fetch("/dummyTaskData.json");
+    const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true"; // Check if we should use dummy data
+
+useEffect(() => { 
+    const fetchData = async () => {
+        try {
+            // Determine the data source based on the environment variable
+            const endpoint = useDummyData ? "/dummyTaskData.json" : "/api/tasks";  
+            const response = await fetch(endpoint);
+
+            // Check if the response is OK (status 200-299), otherwise throw an error
+            if (!response.ok) {
+                throw new Error(`Failed to fetch tasks: ${response.status} ${response.statusText}`);
+            }
+
             const jsonData = await response.json();
 
-            jsonData.tasks = jsonData.tasks.map((task: any) => {
-                const date = new Date(task.createdTime);
-                const formattedDate = `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
-                return { ...task, createdTime: formattedDate };
-            });
+            // Ensure the response contains valid data before setting state
+            if (!jsonData.tasks || !Array.isArray(jsonData.tasks)) {
+                console.error("Invalid response structure:", jsonData);
+                return;
+            }
 
             setData(jsonData);
-            console.log(jsonData);
-        };
+        } catch (error) {
+            console.error("Error fetching tasks:", error);
+            alert("Failed to load tasks.");
+        }
+    };
 
-        fetchData();
-    }, []);
+    fetchData();
+}, []);
 
     return (
         <Box
@@ -78,7 +92,7 @@ export default function Tasks() {
                                     <TableCell>{task.createdBy}</TableCell>
                                     <TableCell>{task.host?.name}</TableCell>
                                     <TableCell>{task.image?.name}</TableCell>
-                                    <TableCell>{task.scheduledStartTime}</TableCell>
+                                    <TableCell>{task.createdTime}</TableCell>
                                     <TableCell>{task.node}</TableCell>
                                     <TableCell>{task.state?.name}</TableCell>
                                 </TableRow>

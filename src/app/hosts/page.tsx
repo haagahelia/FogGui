@@ -17,31 +17,35 @@ export default function Hosts() {
 
   const [data, setData] = useState<any>({ hosts: [] });
 
+  const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true"; // Check if we should use dummy data
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Using dummy data for now (GitHub version)
-        const response = await fetch("/dummyData.json");
-        const jsonData = await response.json();
-        setData(jsonData);
-        console.log("Using dummy data:", jsonData);
-
-        // Uncomment this and remove above stuff when using the real API
-        /*
-        const response = await fetch("/api/hosts");
+        // Determine the data source based on the environment variable
+        const endpoint = useDummyData ? "/dummyData.json" : "/api/hosts";
+        const response = await fetch(endpoint);
+  
+        // Check if the response is OK (status 200-299), otherwise throw an error
         if (!response.ok) {
-          throw new Error(`Failed to fetch hosts: ${response.statusText}`);
+          throw new Error(`Failed to fetch hosts: ${response.status} ${response.statusText}`);
         }
-
+  
         const jsonData = await response.json();
+  
+        // Ensure the response contains a valid 'hosts' array before setting state
+        if (!jsonData.hosts || !Array.isArray(jsonData.hosts)) {
+          console.error("Invalid response structure:", jsonData);
+          return;
+        }
+  
         setData({ hosts: jsonData.hosts });
-        */
       } catch (error) {
         console.error("Error fetching hosts:", error);
         alert("Failed to load hosts.");
       }
     };
-
+  
     fetchData();
   }, []);
 
