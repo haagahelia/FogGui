@@ -35,7 +35,7 @@ export default function Hosts() {
   
         // Ensure the response contains a valid 'hosts' array before setting state
         if (!jsonData.hosts || !Array.isArray(jsonData.hosts)) {
-          console.error("Invalid response structure:", jsonData);
+          console.error("Host data is not in expected format:", jsonData);
           return;
         }
   

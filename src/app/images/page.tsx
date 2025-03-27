@@ -24,30 +24,33 @@ export default function Images() {
     const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true"; // Check if we should use dummy data
   
     useEffect(() => {
-        const fetchHostData = async () => {
-          try {
-            // Using dummy data for now (GitHub version)
-            const response = await fetch("/dummyData.json");
-            const jsonData = await response.json();
-            setHostData(jsonData);
-            console.log("Using dummy data:", jsonData);
-    
-            // Uncomment this and remove above stuff when using the real API
-            /*
-            const response = await fetch("/api/hosts");
-            if (!response.ok) {
-              throw new Error(Failed to fetch hosts: ${response.statusText});
-            }
-    
-            const jsonData = await response.json();
-            setHostData({ hosts: jsonData.hosts });
-            */
-          } catch (error) {
-            console.error("Error fetching hosts:", error);
-            alert("Failed to load hosts.");
+      const fetchHostData = async () => {
+        try {
+          const endpoint = useDummyData ? "/dummyData.json" : "/api/hosts";
+          const response = await fetch(endpoint);
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch hosts: ${response.statusText}`);
           }
-        };
-    
+
+          const jsonData = await response.json();
+
+          if (!jsonData.hosts || !Array.isArray(jsonData.hosts)) {
+            console.error("Host data is not in expected format:", jsonData);
+            return;
+          }
+
+          setHostData({ hosts: jsonData.hosts });
+
+          if (useDummyData) {
+            console.log("Using dummy data");
+          }
+        } catch (error) {
+          console.error("Error fetching hosts:", error);
+          alert("Failed to load hosts.");
+        }
+      };
+
         fetchHostData();
       }, []);
   
@@ -67,7 +70,7 @@ export default function Images() {
       
 
             if (!jsonData.images || !Array.isArray(jsonData.images)) {
-              console.error("Image data is missing or invalid:", jsonData);
+              console.error("Image data is not in expected format:", jsonData);
               return;
             }
       

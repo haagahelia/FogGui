@@ -37,7 +37,7 @@ useEffect(() => {
 
             // Ensure the response contains valid data before setting state
             if (!jsonData.tasks || !Array.isArray(jsonData.tasks)) {
-                console.error("Invalid response structure:", jsonData);
+                console.error("Task data is not in expected format:", jsonData);
                 return;
             }
 

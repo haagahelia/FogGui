@@ -25,13 +25,13 @@ export default function Groups() {
         const response = await fetch(endpoint);
   
         if (!response.ok) {
-          throw new Error(`Failed to fetch data: ${response.statusText}`);
+          throw new Error(`Failed to fetch groups: ${response.statusText}`);
         }
   
         const jsonData = await response.json();
   
         if (!jsonData.groups || !Array.isArray(jsonData.groups)) {
-          console.error("Groups data is missing:", jsonData);
+          console.error("Group data is not in expected format:", jsonData);
           return;
         }
   
