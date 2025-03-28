@@ -21,64 +21,74 @@ export default function Images() {
     const [selectedImageID, setSelectedImageID] = useState<number | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true"; // Check if we should use dummy data
+  
     useEffect(() => {
-        const fetchHostData = async () => {
-          try {
-            // Using dummy data for now (GitHub version)
-            const response = await fetch("/dummyData.json");
-            const jsonData = await response.json();
-            setHostData(jsonData);
-            console.log("Using dummy data:", jsonData);
-    
-            // Uncomment this and remove above stuff when using the real API
-            /*
-            const response = await fetch("/api/hosts");
-            if (!response.ok) {
-              throw new Error(Failed to fetch hosts: ${response.statusText});
-            }
-    
-            const jsonData = await response.json();
-            setHostData({ hosts: jsonData.hosts });
-            */
-          } catch (error) {
-            console.error("Error fetching hosts:", error);
-            alert("Failed to load hosts.");
+      const fetchHostData = async () => {
+        try {
+          const endpoint = useDummyData ? "/dummyData.json" : "/api/hosts";
+          const response = await fetch(endpoint);
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch hosts: ${response.statusText}`);
           }
-        };
-    
+
+          const jsonData = await response.json();
+
+          if (!jsonData.hosts || !Array.isArray(jsonData.hosts)) {
+            console.error("Host data is not in expected format:", jsonData);
+            return;
+          }
+
+          setHostData({ hosts: jsonData.hosts });
+
+          if (useDummyData) {
+            console.log("Using dummy data");
+          }
+        } catch (error) {
+          console.error("Error fetching hosts:", error);
+          alert("Failed to load hosts.");
+        }
+      };
+
         fetchHostData();
       }, []);
-
-
-    useEffect(() => {
-        const fetchImageData = async () => {
+  
+      useEffect(() => {
+        const fetchData = async () => {
           try {
-            // Using dummy data for now (GitHub version)
-            const response = await fetch("/dummyImageData.json");
-              const jsonData = await response.json();
-              const imageJSONData = jsonData.map(formatImageData)
-            setImageData(imageJSONData);
-            console.log("Using dummy data:", imageJSONData);
-    
-            // Uncomment this and remove above stuff when using the real API
-            /*
-            const response = await fetch("/api/images");
+            // Determine the data source based on the environment variable
+            const endpoint = useDummyData ? "/dummyImageData.json" : "/api/images";
+            const response = await fetch(endpoint);
+      
+
             if (!response.ok) {
-              throw new Error(Failed to fetch images: ${response.statusText});
+              throw new Error(`Failed to fetch images: ${response.statusText}`);
             }
-    
+
             const jsonData = await response.json();
-            jsonData.images = jsonData.images.map(formatImageData);
-            setImageData({ images: jsonData.images });
-            */
+      
+
+            if (!jsonData.images || !Array.isArray(jsonData.images)) {
+              console.error("Image data is not in expected format:", jsonData);
+              return;
+            }
+      
+            // Process each image in the images array
+            const formattedImages = jsonData.images.map(formatImageData);
+      
+            // Set the state with the formatted images data
+            setImageData({ images: formattedImages });
+      
           } catch (error) {
             console.error("Error fetching images:", error);
             alert("Failed to load images.");
           }
         };
-    
-        fetchImageData();
+      
+        fetchData();
       }, []);
+      
 
     // Formating image data
     const formatImageData = (image: any) => {
