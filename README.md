@@ -14,25 +14,52 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+# Application Configuration
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+This document provides the necessary steps to configure and run the login application.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Setup Instructions
 
-## Learn More
+### 1. Create the `.env.local` File
 
-To learn more about Next.js, take a look at the following resources:
+Create a file named `.env.local` and add the following content:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```ini
+NEXTAUTH_SECRET=your-secret-here
+DATABASE_URL=file:./user.db
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 2. Generate a Secure Secret Key
 
-## Deploy on Vercel
+Replace `your-secret-here` with a secure key generated using the following command in Command Prompt or PowerShell:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```sh
+openssl rand -base64 32
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Copy and paste the generated key into the `NEXTAUTH_SECRET` field in your `.env.local` file.
+
+### 3. Install Dependencies
+
+Run the following command to install necessary dependencies:
+
+```sh
+npm install
+```
+
+### 4. Start the Application
+
+Run the following command to start the application:
+
+```sh
+npm run dev
+```
+
+The application should now be up and running.
+
+---
+
+For any issues, ensure your `.env.local` file is correctly configured and that you have installed all dependencies.
+
 
 
