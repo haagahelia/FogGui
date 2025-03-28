@@ -18,13 +18,42 @@ NEXT_PUBLIC_FOG_API_TOKEN=your-api-key-here
 
 ### 2. Generate a Secure Secret Key
 
-Replace `your-secret-here` with a secure key generated using the following command in Command Prompt or PowerShell:
+To generate a secure key for `NEXTAUTH_SECRET`, follow the steps for your operating system:
 
-```sh
-openssl rand -base64 32
-```
+#### **Windows (PowerShell) – No Installation Needed**
+1. Open **PowerShell**.
+2. Run the following command:
 
-Copy and paste the generated key into the `NEXTAUTH_SECRET` field in your `.env.local` file.
+   ```powershell
+   [System.Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))
+   ```
+
+This will generate a 32-byte random string encoded in Base64.
+
+#### **Windows (PowerShell) – Using OpenSSL**
+If OpenSSL is already installed, you can use:
+
+   ```powershell
+   openssl rand -base64 32
+   ```
+
+#### **Mac/Linux (Terminal)**
+1. Open **Terminal**.
+2. Run the following command:
+
+   ```sh
+   openssl rand -base64 32
+   ```
+
+#### **Add the Generated Key to `.env.local`**
+1. Copy the generated key.
+2. Open your `.env.local` file and replace `your-secret-here` with the copied key:
+
+   ```ini
+   NEXTAUTH_SECRET=paste-your-generated-key-here
+   ```
+
+This ensures secure authentication for your application.
 
 ### 3. Retrieve FOG API Credentials
 
