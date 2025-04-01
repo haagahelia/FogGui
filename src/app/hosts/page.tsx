@@ -12,10 +12,13 @@ import {
   Typography,
   Box,
 } from "@mui/material";
+import HostModal from "../../components/HostModal";
 
 export default function Hosts() {
 
   const [data, setData] = useState<any>({ hosts: [] });
+  const [openModal, setOpenModal] = useState(false);
+  const [selectedHost, setSelectedHost] = useState<any>(null);
 
   const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true"; // Check if we should use dummy data
 
@@ -79,6 +82,16 @@ export default function Hosts() {
     }
   };
 
+  const handleOpenModal = (host: any) => {
+    setSelectedHost(host);
+    setOpenModal(true); 
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+    setSelectedHost(null);
+  };
+
   return (
     <Box
       display="flex"
@@ -117,7 +130,12 @@ export default function Hosts() {
               {data.hosts.map((host: any) => (
                 <TableRow key={host.id}>
                   <TableCell>{host.id}</TableCell>
-                  <TableCell>{host.name}</TableCell>
+                  <TableCell 
+                    onClick={() => handleOpenModal(host)}
+                    sx={{ cursor: "pointer", color: "blue", textDecoration: "underline" }}
+                    >
+                      {host.name}
+                  </TableCell>
                   <TableCell>{host.macs[0]}</TableCell>
                   <TableCell>{host.image.name}</TableCell>
                   <TableCell>{host.pingstatuscode}</TableCell>
@@ -137,6 +155,15 @@ export default function Hosts() {
         </TableContainer>
       ) : (
         <Typography variant="body1">No hosts available.</Typography>
+      )}
+
+      {/* HostModal Component */}
+      {selectedHost && (
+        <HostModal
+          open={openModal}
+          onClose={handleCloseModal}
+          hosts={[selectedHost]}
+        />
       )}
     </Box>
   );
