@@ -125,11 +125,7 @@ export default function Images() {
         if (!confirmDeploy) return;
     
         try {
-            // Using dummy data for now (GitHub version)
-            alert(`Deploying image ${imageID} to host ${hostID}`);
-            
-            // Uncomment this and remove above stuff when using the real API
-            /*
+
             const response = await fetch("/api/images", {
                 method: "POST",
                 headers: {
@@ -144,7 +140,7 @@ export default function Images() {
             }
     
             alert("Deployment started successfully.");
-            */
+            
         } catch (error) {
             console.error(error);
             alert("Error: " + (error instanceof Error ? error.message : "Unknown error"));
