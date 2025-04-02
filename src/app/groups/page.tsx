@@ -10,11 +10,14 @@ import {
   Paper,
   Typography,
   Box,
+  Button
 } from "@mui/material";
+import CreateGroupDialog from "@/components/CreateGroupDialog"; // Import the new component
 
 export default function Groups() {
 
   const [data, setData] = useState<any>({ groups: [] });
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true";
 
@@ -50,6 +53,34 @@ export default function Groups() {
   
     fetchData();
   }, []);
+
+  const handleCreateGroup = async (name: string, description: string) => {
+    try {
+      const response = await fetch("/api/groups", {
+        method: "POST",
+        body: JSON.stringify({
+          action: "createGroup",
+          name: (name),
+          description: (description)
+        }),
+        headers: { "Content-Type": "application/json" }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to create group: ${response.statusText}`);
+      }
+
+      const newGroup = await response.json();
+      setData((prevData: any) => ({
+        groups: [...prevData.groups, newGroup],
+      }));
+
+      setDialogOpen(false);
+    } catch (error) {
+      console.error("Error creating group:", error);
+      alert("Failed to create group.");
+    }
+  };
 
   return (
     <Box
@@ -98,6 +129,18 @@ export default function Groups() {
       ) : (
         <Typography variant="body1">No groups available.</Typography>
       )}
+      {/* Create Group Button */}
+      <Button
+        variant="contained"
+        color="primary"
+        sx={{ marginTop: 2 }}
+        onClick={() => setDialogOpen(true)}
+      >
+        Create New Group
+      </Button>
+
+      {/* Create Group Dialog */}
+      <CreateGroupDialog open={dialogOpen} onClose={() => setDialogOpen(false)} onCreate={handleCreateGroup} />
     </Box>
   );
 };
