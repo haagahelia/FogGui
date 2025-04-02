@@ -10,13 +10,18 @@ import {
   Paper,
   Typography,
   Box,
-  Button
+  Button,
+  Modal,
+  MenuItem,
+  Select
 } from "@mui/material";
 import CreateGroupDialog from "@/components/CreateGroupDialog"; // Import the new component
 
 export default function Groups() {
-
   const [data, setData] = useState<any>({ groups: [] });
+  const [selectedGroup, setSelectedGroup] = useState<any | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [primaryDisk, setPrimaryDisk] = useState("Disk 1");
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true";
@@ -28,13 +33,13 @@ export default function Groups() {
         const response = await fetch(endpoint);
   
         if (!response.ok) {
-          throw new Error(`Failed to fetch groups: ${response.statusText}`);
+          throw new Error(`Failed to fetch data: ${response.statusText}`);
         }
   
         const jsonData = await response.json();
   
         if (!jsonData.groups || !Array.isArray(jsonData.groups)) {
-          console.error("Group data is not in expected format:", jsonData);
+          console.error("Groups data is missing:", jsonData);
           return;
         }
   
@@ -53,7 +58,7 @@ export default function Groups() {
   
     fetchData();
   }, []);
-
+  
   const handleCreateGroup = async (name: string, description: string) => {
     try {
       const response = await fetch("/api/groups", {
@@ -82,6 +87,39 @@ export default function Groups() {
     }
   };
 
+  const handleGroupClick = (group: any) => {
+    setSelectedGroup(group); // Store the whole group object
+    setIsModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+  };
+
+  const startMulticast = () => {
+    if (!selectedGroup || !selectedGroup.id) {
+      console.error("No group selected or missing ID.");
+      return;
+    }
+  
+    fetch("/api/groups", {
+      method: "POST",
+      body: JSON.stringify({
+        action: "startMulticast",
+        groupID: selectedGroup.id,  // Get ID from selectedGroup
+        taskTypeID: "8",
+        name: `Multicast for ${selectedGroup.name}`,
+      }),
+      headers: { "Content-Type": "application/json" },
+    })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Failed to start multicast");
+        console.log("Multicast started successfully:", data);
+      })
+      .catch((error) => console.error("Error starting multicast:", error.message));
+  };
+
   return (
     <Box
       display="flex"
@@ -96,39 +134,82 @@ export default function Groups() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>
-                  <strong>ID</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Name</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Host Count</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Created By</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Created Time</strong>
-                </TableCell>
+                <TableCell><strong>ID</strong></TableCell>
+                <TableCell><strong>Name</strong></TableCell>
+                <TableCell><strong>Host Count</strong></TableCell>
+                <TableCell><strong>Created By</strong></TableCell>
+                <TableCell><strong>Created Time</strong></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-                {data.groups.map((group: any) => (
-                    <TableRow key={group.id}>
-                        <TableCell>{group.id}</TableCell>
-                        <TableCell>{group.name}</TableCell>
-                        <TableCell>{group.hostcount}</TableCell>
-                        <TableCell>{group.createdBy}</TableCell>
-                        <TableCell>{group.createdTime}</TableCell>
-                    </TableRow>
-                ))}
+              {data.groups.map((group: any) => (
+                <TableRow key={group.id}>
+                  <TableCell>{group.id}</TableCell>
+                  <TableCell
+                    onClick={() => handleGroupClick(group)}
+                    style={{ cursor: "pointer", color: "blue" }}
+                  >
+                    {group.name} - {group.id}
+                  </TableCell>
+                  <TableCell>{group.hostcount}</TableCell>
+                  <TableCell>{group.createdBy}</TableCell>
+                  <TableCell>{group.createdTime}</TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </TableContainer>
       ) : (
         <Typography variant="body1">No groups available.</Typography>
       )}
+      {/* Modal for Group Details */}
+      <Modal
+          open={isModalOpen}
+          onClose={handleModalClose}
+          sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}
+        >
+          <Box
+            sx={{
+              backgroundColor: "white",
+              padding: 4,
+              borderRadius: 2,
+              boxShadow: 24,
+              textAlign: "center",
+              maxWidth: 600,
+              width: "80%",
+            }}
+          >
+          <Typography variant="h6">
+              {selectedGroup && selectedGroup.name ? selectedGroup.name : ""}
+            </Typography>
+            <Typography variant="body1" sx={{ marginTop: 2 }}>
+              Assigned Image: <strong>(Placeholder - Fetch Later)</strong>
+            </Typography>
+
+            <Typography variant="body1" sx={{ marginTop: 2 }}>Select Primary Disk:</Typography>
+            <Select
+              value={primaryDisk}
+              onChange={(e) => setPrimaryDisk(e.target.value)}
+              fullWidth
+              sx={{ marginTop: 1 }}
+            >
+              <MenuItem value="Disk 1 (Windows)">Disk 1</MenuItem>
+              <MenuItem value="Disk 2 (Linux)">Disk 2</MenuItem>
+            </Select>
+
+          <Button
+            onClick={startMulticast}
+              variant="contained"
+              color="primary"
+              sx={{ marginTop: 2 }}
+            >
+              Start Multicast
+            </Button>
+
+            <Button onClick={handleModalClose} sx={{ marginTop: 2 }}>Close</Button>
+          </Box>
+        </Modal>
+
       {/* Create Group Button */}
       <Button
         variant="contained"
@@ -143,4 +224,4 @@ export default function Groups() {
       <CreateGroupDialog open={dialogOpen} onClose={() => setDialogOpen(false)} onCreate={handleCreateGroup} />
     </Box>
   );
-};
+}
