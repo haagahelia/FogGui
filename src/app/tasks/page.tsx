@@ -103,9 +103,6 @@ useEffect(() => {
             ) : (
                 <Typography variant="body1">No groups available.</Typography>
             )}
-            <Button className="button-primary" onClick={() => router.push("/dashboard")}>
-                Back
-            </Button>
         </Box>
     );
 };
