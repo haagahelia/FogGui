@@ -24,6 +24,8 @@
 .DS_Store
 *.pem
 .idea
+node_modules/
+.next
 
 
 # debug
