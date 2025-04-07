@@ -12,44 +12,44 @@ import {
     Paper,
     Typography,
     Box,
+    LinearProgress
 } from "@mui/material";
 
 export default function Tasks() {
     const router = useRouter();
-
     const [data, setData] = useState<any>({ tasks: [] });
 
     const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true"; // Check if we should use dummy data
 
-useEffect(() => { 
-    const fetchData = async () => {
-        try {
-            // Determine the data source based on the environment variable
-            const endpoint = useDummyData ? "/dummyTaskData.json" : "/api/tasks";  
-            const response = await fetch(endpoint);
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // Determine the data source based on the environment variable
+                const endpoint = useDummyData ? "/dummyTaskData.json" : "/api/tasks";
+                const response = await fetch(endpoint);
 
-            // Check if the response is OK (status 200-299), otherwise throw an error
-            if (!response.ok) {
-                throw new Error(`Failed to fetch tasks: ${response.status} ${response.statusText}`);
+                // Check if the response is OK (status 200-299), otherwise throw an error
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch tasks: ${response.status} ${response.statusText}`);
+                }
+
+                const jsonData = await response.json();
+
+                // Ensure the response contains valid data before setting state
+                if (!jsonData.tasks || !Array.isArray(jsonData.tasks)) {
+                    console.error("Task data is not in expected format:", jsonData);
+                    return;
+                }
+
+                setData(jsonData);
+            } catch (error) {
+                console.error("Error fetching tasks:", error);
+                alert("Failed to load tasks.");
             }
+        };
 
-            const jsonData = await response.json();
-
-            // Ensure the response contains valid data before setting state
-            if (!jsonData.tasks || !Array.isArray(jsonData.tasks)) {
-                console.error("Task data is not in expected format:", jsonData);
-                return;
-            }
-
-            setData(jsonData);
-        } catch (error) {
-            console.error("Error fetching tasks:", error);
-            alert("Failed to load tasks.");
-        }
-    };
-
-    fetchData();
-}, []);
+        fetchData();
+    }, []);
 
     return (
         <Box
@@ -61,48 +61,54 @@ useEffect(() => {
         >
             <h1>Tasks</h1>
             {data.tasks?.length > 0 ? (
-                <TableContainer component={Paper} className="table-container">
+                <TableContainer component={Paper} sx={{ maxWidth: "80%" }}>
                     <Table>
                         <TableHead>
                             <TableRow>
-                                <TableCell>
-                                    <strong>Started By:</strong>
-                                </TableCell>
-                                <TableCell>
-                                    <strong>Hostname
-                                        MAC</strong>
-                                </TableCell>
-                                <TableCell>
-                                    <strong>Image Name</strong>
-                                </TableCell>
-                                <TableCell>
-                                    <strong>Start Time</strong>
-                                </TableCell>
-                                <TableCell>
-                                    <strong>Working with node</strong>
-                                </TableCell>
-                                <TableCell>
-                                    <strong>Status</strong>
-                                </TableCell>
+                                <TableCell><strong>Started By</strong></TableCell>
+                                <TableCell><strong>Hostname MAC</strong></TableCell>
+                                <TableCell><strong>Image Name</strong></TableCell>
+                                <TableCell><strong>Start Time</strong></TableCell>
+                                <TableCell><strong>Working with Node</strong></TableCell>
+                                <TableCell><strong>Status</strong></TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {data.tasks.map((task: any) => (
-                                <TableRow key={task.id}>
-                                    <TableCell>{task.createdBy}</TableCell>
-                                    <TableCell>{task.host?.name}</TableCell>
-                                    <TableCell>{task.image?.name}</TableCell>
-                                    <TableCell>{task.createdTime}</TableCell>
-                                    <TableCell>{task.node}</TableCell>
-                                    <TableCell>{task.state?.name}</TableCell>
-                                </TableRow>
-                            ))}
+                            {data.tasks.map((task: any) => {
+                                const status = task.state?.name || "";
+
+                                return (
+                                    <React.Fragment key={task.id}>
+                                        <TableRow>
+                                            <TableCell>{task.createdBy}</TableCell>
+                                            <TableCell>{task.host?.name}</TableCell>
+                                            <TableCell>{task.image?.name}</TableCell>
+                                            <TableCell>{task.createdTime}</TableCell>
+                                            <TableCell>{task.node}</TableCell>
+                                            <TableCell>{status}</TableCell>
+                                        </TableRow>
+
+                                        <TableRow>
+                                            <TableCell colSpan={6}>
+                                                <LinearProgress
+                                                    variant="determinate"
+                                                    value={task.percent}
+                                                    sx={{ height: 8, borderRadius: 5, marginBottom: 1 }}
+                                                />
+                                                <Typography variant="caption" display="block" textAlign="center">
+                                                    {task.percent}%
+                                                </Typography>
+                                            </TableCell>
+                                        </TableRow>
+                                    </React.Fragment>
+                                );
+                            })}
                         </TableBody>
                     </Table>
                 </TableContainer>
             ) : (
-                <Typography variant="body1">No groups available.</Typography>
+                <Typography variant="body1">No tasks available.</Typography>
             )}
         </Box>
     );
-};
+}
