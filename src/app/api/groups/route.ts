@@ -20,6 +20,54 @@ export async function GET() {
   }
 }
 
+export async function PUT(req: Request) {
+  try {
+    const body = await req.json();
+
+    console.log("Received PUT body:", body);
+
+    // Ensure the body contains the necessary fields
+    const { groupID, kernelDevice, imageID } = body;
+    if (!groupID || !kernelDevice || !imageID) {
+      return new Response(
+        JSON.stringify({ error: "Missing groupID, kernelDevice, or imageID" }),
+        { status: 400 }
+      );
+    }
+
+    // Call the API to update the group with the new disk and image
+    const response = await fetch(`${process.env.NEXT_PUBLIC_FOG_API_BASE_URL}/fog/group/${groupID}/edit`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "fog-api-token": process.env.NEXT_PUBLIC_FOG_API_TOKEN || "",
+        "fog-user-token": process.env.NEXT_PUBLIC_FOG_API_USER_KEY || "",
+      },
+      body: JSON.stringify({
+        kernelDevice: kernelDevice, // "Disk 1" or "Disk 2"
+        imageID: imageID,           // The image ID to assign to the group
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to update group with selected image and disk.");
+    }
+
+    // Return a success message if the update is successful
+    const updatedGroup = await response.json();
+    return new Response(
+      JSON.stringify({ success: true, data: updatedGroup }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
+  } catch (error: any) {
+    // Handle any errors that occur during the request
+    return new Response(
+      JSON.stringify({ error: error.message || "An unknown error occurred" }),
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();

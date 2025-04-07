@@ -13,7 +13,9 @@ import {
   Button,
   Modal,
   MenuItem,
-  Select
+  Select,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import CreateGroupDialog from "@/components/CreateGroupDialog"; // Import the new component
 
@@ -21,8 +23,10 @@ export default function Groups() {
   const [data, setData] = useState<any>({ groups: [] });
   const [selectedGroup, setSelectedGroup] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [primaryDisk, setPrimaryDisk] = useState("Disk 1");
+  const [primaryDisk, setPrimaryDisk] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [imageData, setImageData] = useState<any>({ images: [] });
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true";
 
@@ -58,6 +62,36 @@ export default function Groups() {
   
     fetchData();
   }, []);
+
+  useEffect(() => {
+          const fetchImageData = async () => {
+            try {
+              const endpoint = useDummyData ? "/dummyImageData.json" : "/api/images";
+              const response = await fetch(endpoint);
+        
+  
+              if (!response.ok) {
+                throw new Error(`Failed to fetch images: ${response.statusText}`);
+              }
+  
+              const jsonData = await response.json();
+        
+  
+              if (!jsonData.images || !Array.isArray(jsonData.images)) {
+                console.error("Image data is not in expected format:", jsonData);
+                return;
+              }
+        
+              setImageData(jsonData);
+
+            } catch (error) {
+              console.error("Error fetching images:", error);
+              alert("Failed to load images.");
+            }
+          };
+        
+          fetchImageData();
+        }, []);
   
   const handleCreateGroup = async (name: string, description: string) => {
     try {
@@ -93,6 +127,8 @@ export default function Groups() {
   };
 
   const handleModalClose = () => {
+    setSelectedImage(null);
+    setPrimaryDisk(null);
     setIsModalOpen(false);
   };
 
@@ -102,23 +138,51 @@ export default function Groups() {
       return;
     }
   
+  
+    if (!primaryDisk || !selectedImage) {
+      console.error("Please select both a primary disk and an image before starting multicast.");
+      return;
+    }
+  
     fetch("/api/groups", {
-      method: "POST",
-      body: JSON.stringify({
-        action: "startMulticast",
-        groupID: selectedGroup.id,  // Get ID from selectedGroup
-        taskTypeID: "8",
-        name: `Multicast for ${selectedGroup.name}`,
-      }),
+      method: "PUT",
       headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "updateGroup",
+        groupID: selectedGroup.id,
+        imageID: selectedImage,
+        kernelDevice: primaryDisk,
+      }),
     })
-      .then(async (response) => {
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Failed to start multicast");
-        console.log("Multicast started successfully:", data);
+      .then(async (updateResponse) => {
+        const updateData = await updateResponse.json();
+        if (!updateResponse.ok) throw new Error(updateData.error || "Failed to update group");
+  
+        return fetch("/api/groups", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "startMulticast",
+            groupID: selectedGroup.id,
+            taskTypeID: "8",
+            name: `Multicast for ${selectedGroup.name}`,
+          }),
+        });
       })
-      .catch((error) => console.error("Error starting multicast:", error.message));
+      .then(async (multicastResponse) => {
+        const multicastData = await multicastResponse.json();
+        if (!multicastResponse.ok) throw new Error(multicastData.error || "Failed to start multicast");
+  
+        console.log("Multicast started successfully:", multicastData);
+        alert("🎉 Multicast started successfully!");
+      })
+      .catch((error) => {
+        console.error("Error during multicast process:", error.message);
+        alert("❌ An unexpected error occurred.");
+      });
   };
+  
+  
 
   return (
     <Box
@@ -183,25 +247,47 @@ export default function Groups() {
               {selectedGroup && selectedGroup.name ? selectedGroup.name : ""}
             </Typography>
             <Typography variant="body1" sx={{ marginTop: 2 }}>
-              Assigned Image: <strong>(Placeholder - Fetch Later)</strong>
-            </Typography>
+              To Multicast:
+          </Typography>
+          
+            {/* Dropdown for selecting an image */}
+            <FormControl fullWidth sx={{ marginTop: 3 }}>
+              <InputLabel id="image-select-label">Select Image</InputLabel>
+              <Select
+                labelId="image-select-label"
+                value={selectedImage || ""}
+                onChange={(e) => setSelectedImage(e.target.value)}
+                label="Choose Image"
+              >
+                {imageData.images.map((image: any) => (
+                  <MenuItem key={image.id} value={image.id}>
+                    {image.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-            <Typography variant="body1" sx={{ marginTop: 2 }}>Select Primary Disk:</Typography>
-            <Select
-              value={primaryDisk}
-              onChange={(e) => setPrimaryDisk(e.target.value)}
-              fullWidth
-              sx={{ marginTop: 1 }}
-            >
-              <MenuItem value="Disk 1 (Windows)">Disk 1</MenuItem>
-              <MenuItem value="Disk 2 (Linux)">Disk 2</MenuItem>
-            </Select>
+            {/* Dropdown for selecting primary disk */}
+            <FormControl fullWidth sx={{ marginTop: 3 }}>
+              <InputLabel id="disk-select-label">Select Primary Disk</InputLabel>
+              <Select
+                labelId="disk-select-label"
+                value={primaryDisk || ""}
+                onChange={(e) => setPrimaryDisk(e.target.value)}
+                label="Select Primary Disk"
+              >
+
+                <MenuItem value="1">Disk 1</MenuItem>
+                <MenuItem value="2">Disk 2</MenuItem>
+              </Select>
+            </FormControl>
 
           <Button
             onClick={startMulticast}
               variant="contained"
               color="primary"
-              sx={{ marginTop: 2 }}
+            sx={{ marginTop: 2 }}
+            disabled={!selectedImage || !primaryDisk}
             >
               Start Multicast
             </Button>
