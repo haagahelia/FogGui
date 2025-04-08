@@ -18,6 +18,7 @@ import {
   InputLabel,
 } from "@mui/material";
 import CreateGroupDialog from "@/components/CreateGroupDialog"; // Import the new component
+import { useRouter } from "next/navigation";
 
 export default function Groups() {
   const [data, setData] = useState<any>({ groups: [] });
@@ -29,6 +30,8 @@ export default function Groups() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true";
+
+  const router = useRouter();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -175,6 +178,8 @@ export default function Groups() {
   
         console.log("Multicast started successfully:", multicastData);
         alert("🎉 Multicast started successfully!");
+        // Redirect
+        router.push("/dashboard");
       })
       .catch((error) => {
         console.error("Error during multicast process:", error.message);
