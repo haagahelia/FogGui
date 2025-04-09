@@ -10,14 +10,7 @@ import {
   Chip,
   Divider,
 } from "@mui/material";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+
 
 export default function Dashboard() {
   const [tasks, setTasks] = useState<any>([]);
@@ -26,13 +19,24 @@ export default function Dashboard() {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true";
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const taskResponse = await fetch("/dummyTaskData.json");
-        const groupAssocResponse = await fetch("/dummyGroupAssociation.json");
-        const hostResponse = await fetch("/dummyData.json");
-        const groupResponse = await fetch("/dummyGroupData.json");
+
+        const taskEndpoint = useDummyData ? "/dummyTaskData.json" : "/api/tasks";
+        const assocEndpoint = useDummyData ? "/dummyGroupAssociation.json" : "/api/groupassociations";
+        const hostEndpoint = useDummyData ? "/dummyData.json" : "/api/hosts";
+        const groupEndpoint = useDummyData ? "/dummyGroupData.json" : "/api/groups";
+        
+          
+          const [taskResponse,groupAssocResponse, hostResponse, groupResponse] = await Promise.all([
+            fetch(taskEndpoint),
+            fetch(assocEndpoint),
+            fetch(hostEndpoint),
+            fetch(groupEndpoint),
+              ]);
 
         const taskData = await taskResponse.json();
         const groupAssocData = await groupAssocResponse.json();
