@@ -43,11 +43,18 @@ const HostModal: React.FC<HostModalProps> = ({ open, onClose, hosts }) => {
     const [groupAssociations, setGroupAssociations] = useState<GroupAssociation[]>([]);
     const [hostGroups, setHostGroups] = useState<string[]>([]);
 
+    const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true";
+
     useEffect(() => {
         const fetchGroupData = async () => {
             try {
-                const groupResponse = await fetch("/dummyGroupData.json");
-                const groupAssocResponse = await fetch("/dummyGroupAssociation.json");
+              const groupEndpoint = useDummyData ? "/dummyGroupData.json" : "/api/groups";
+              const assocEndpoint = useDummyData ? "/dummyGroupAssociation.json" : "/api/groupassociations";
+          
+              const [groupResponse, groupAssocResponse] = await Promise.all([
+                fetch(groupEndpoint),
+                fetch(assocEndpoint),
+              ]);
 
                 const groupJson = await groupResponse.json();
                 const groupAssocJson = await groupAssocResponse.json();
