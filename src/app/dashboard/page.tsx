@@ -9,15 +9,25 @@ import {
   Box,
   Chip,
   Divider,
+  FormControl,
+  Select,
+  MenuItem,
+  InputLabel,
 } from "@mui/material";
+import { Group } from "@/types/group";
+import { Image } from "@/types/image";
 
 
 export default function Dashboard() {
-  const [tasks, setTasks] = useState<any>([]);
+  const [tasks, setTasks] = useState([]);
   const [groupAssociations, setGroupAssociations] = useState([]);
   const [hosts, setHosts] = useState([]);
-  const [groups, setGroups] = useState([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
+  const [images, setImages] = useState<Image[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [selectedImage, setSelectedImage] = useState<Image | null>(null);
+  const [selectedPrimaryDisk, setSelectedPrimaryDisk] = useState<string | null>(null);
 
   const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true";
 
@@ -29,24 +39,28 @@ export default function Dashboard() {
         const assocEndpoint = useDummyData ? "/dummyGroupAssociation.json" : "/api/groupassociations";
         const hostEndpoint = useDummyData ? "/dummyData.json" : "/api/hosts";
         const groupEndpoint = useDummyData ? "/dummyGroupData.json" : "/api/groups";
+        const imageEndpoint = useDummyData ? "/dummyImageData.json" : "/api/images";
         
           
-          const [taskResponse,groupAssocResponse, hostResponse, groupResponse] = await Promise.all([
+          const [taskResponse,groupAssocResponse, hostResponse, groupResponse, imageResponse] = await Promise.all([
             fetch(taskEndpoint),
             fetch(assocEndpoint),
             fetch(hostEndpoint),
             fetch(groupEndpoint),
+            fetch(imageEndpoint),
               ]);
 
         const taskData = await taskResponse.json();
         const groupAssocData = await groupAssocResponse.json();
         const hostData = await hostResponse.json();
         const groupData = await groupResponse.json();
+        const imageData = await imageResponse.json();
 
         setTasks(taskData.tasks || []);
         setGroupAssociations(groupAssocData.groupassociations || []);
         setHosts(hostData.hosts || []);
         setGroups(groupData.groups || []);
+        setImages(imageData.images || []);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -87,25 +101,140 @@ export default function Dashboard() {
             group.id === groupID) as { id: number; name: string } | undefined)?.name ?? `Unknown group`
       ),
     }));
+  
+    const startMulticast = () => {
+
+      if (!selectedGroup || !selectedImage || !selectedPrimaryDisk) {
+        console.error("Please select group, image and disk before starting multicast");
+        return;
+      }
+    
+      fetch("/api/groups", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "updateGroup",
+          groupID: selectedGroup.id,
+          imageID: selectedImage.id,
+          kernelDevice: selectedPrimaryDisk,
+        }),
+      })
+        .then(async (updateResponse) => {
+          const updateData = await updateResponse.json();
+          if (!updateResponse.ok) throw new Error(updateData.error || "Failed to update group");
+    
+          return fetch("/api/groups", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "startMulticast",
+              groupID: selectedGroup.id,
+              taskTypeID: "8",
+              name: `Multicast for ${selectedGroup.name}`,
+            }),
+          });
+        })
+        .then(async (multicastResponse) => {
+          const multicastData = await multicastResponse.json();
+          if (!multicastResponse.ok) throw new Error(multicastData.error || "Failed to start multicast");
+    
+          console.log("Multicast started successfully:", multicastData);
+          alert("🎉 Multicast started successfully!");
+          // After successful multicast, re-fetch the tasks to update the active tasks section
+          const taskResponse = await fetch("/api/tasks");
+          const taskData = await taskResponse.json();
+          setTasks(taskData.tasks || []);  // Update tasks to trigger re-render
+        })
+        .catch((error) => {
+          console.error("Error during multicast process:", error.message);
+          alert("❌ An unexpected error occurred.");
+        });
+    };
     
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
       <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6">Actions</Typography>
-              <Box mt={2}>
-                <Button variant="contained" sx={{ mr: 1 }}>
-                  Start Multicast
-                </Button>
-                <Button variant="contained" color="secondary">
-                  Start Unicast
-                </Button>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+      <Grid item xs={12} md={4}>
+        <Card>
+          <CardContent>
+            <Typography variant="h6">Actions</Typography>
+            <Box mt={2}>
+              {/* Dropdown for selecting group */}
+              <FormControl fullWidth sx={{ marginBottom: 2 }}>
+                <InputLabel id="group-select-label">Select Group</InputLabel>
+                <Select
+                  labelId="group-select-label"
+                  value={selectedGroup?.id ?? ""}
+                  onChange={(e) => {
+                    const group = groups.find((g) => g.id === Number(e.target.value));
+                    setSelectedGroup(group ?? null); // if no group found, set selectedGroup to null
+                  }}
+                  label="Select Group"
+                >
+                  {groups.map((group: any) => (
+                    <MenuItem key={group.id} value={group.id}>
+                      {group.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              {/* Dropdown for selecting image */}
+              <FormControl fullWidth sx={{ marginBottom: 2 }}>
+                <InputLabel id="image-select-label">Select Image</InputLabel>
+                <Select
+                  labelId="image-select-label"
+                  value={selectedImage?.id ?? ""}
+                  onChange={(e) => {
+                    const image = images.find((img) => img.id === Number(e.target.value));
+                    setSelectedImage(image ?? null); // if no image found, set selectedImage to null
+                  }}
+                  label="Select Image"
+                >
+                  {images.map((image: any) => (
+                    <MenuItem key={image.id} value={image.id}>
+                      {image.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              {/* Dropdown for selecting primary disk */}
+              <FormControl fullWidth sx={{ marginBottom: 2 }}>
+                <InputLabel id="disk-select-label">Select Primary Disk</InputLabel>
+                <Select
+                  labelId="disk-select-label"
+                  value={selectedPrimaryDisk || ""}
+                  onChange={(e) => setSelectedPrimaryDisk(e.target.value)}
+                  label="Select Primary Disk"
+                >
+                  <MenuItem value="1">Disk 1</MenuItem>
+                  <MenuItem value="2">Disk 2</MenuItem>
+                </Select>
+              </FormControl>
+
+              {/* Start Multicast Button */}
+                <Button
+                onClick={startMulticast}
+                variant="contained"
+                sx={{ mr: 1 }}
+                disabled={!selectedGroup || !selectedImage || !selectedPrimaryDisk}
+              >
+                Start Multicast
+              </Button>
+
+              {/* Start Unicast Button */}
+              <Button
+                variant="contained"
+                color="secondary"
+                disabled={!selectedGroup || !selectedImage || !selectedPrimaryDisk}
+              >
+                Start Unicast
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
         <Grid item xs={12} md={4}>
           <Card>
             <CardContent>
@@ -117,9 +246,12 @@ export default function Dashboard() {
                     key={task.id}
                     display="flex"
                     justifyContent="space-between"
+                    alignItems="center"
                     mb={1}
                   >
                     <Typography>{task.host?.name || task.name}</Typography>
+                    <Typography> {task.image?.name || "No image"}</Typography>
+
                     <Chip
                       label={task.state?.name}
                       color="primary"
