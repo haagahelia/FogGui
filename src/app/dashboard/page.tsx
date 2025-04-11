@@ -149,7 +149,54 @@ export default function Dashboard() {
           console.error("Error during multicast process:", error.message);
           alert("❌ An unexpected error occurred.");
         });
-    };
+  };
+  
+  const startUnicast = () => {
+
+    if (!selectedGroup || !selectedImage || !selectedPrimaryDisk) {
+      console.error("Please select group, image and disk before starting multicast");
+      return;
+    }
+  
+    fetch("/api/groups", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "updateGroup",
+        groupID: selectedGroup.id,
+        imageID: selectedImage.id,
+        kernelDevice: selectedPrimaryDisk,
+      }),
+    })
+      .then(async (updateResponse) => {
+        const updateData = await updateResponse.json();
+        if (!updateResponse.ok) throw new Error(updateData.error || "Failed to update group");
+  
+        return fetch("/api/groups", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "startUnicast",
+            groupID: selectedGroup.id,
+          }),
+        });
+      })
+      .then(async (unicastResponse) => {
+        const unicastData = await unicastResponse.json();
+        if (!unicastResponse.ok) throw new Error(unicastData.error || "Failed to start unicast");
+  
+        console.log("unicast started successfully:", unicastData);
+        alert("🎉 Unicast started successfully!");
+
+        const taskResponse = await fetch("/api/tasks");
+        const taskData = await taskResponse.json();
+        setTasks(taskData.tasks || []);
+      })
+      .catch((error) => {
+        console.error("Error during deployment process:", error.message);
+        alert("❌ An unexpected error occurred.");
+      });
+  };
     
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
@@ -214,7 +261,7 @@ export default function Dashboard() {
               </FormControl>
 
               {/* Start Multicast Button */}
-                <Button
+              <Button
                 onClick={startMulticast}
                 variant="contained"
                 sx={{ mr: 1 }}
@@ -225,6 +272,7 @@ export default function Dashboard() {
 
               {/* Start Unicast Button */}
               <Button
+                onClick={startUnicast}
                 variant="contained"
                 color="secondary"
                 disabled={!selectedGroup || !selectedImage || !selectedPrimaryDisk}
@@ -253,8 +301,14 @@ export default function Dashboard() {
                     <Typography> {task.image?.name || "No image"}</Typography>
 
                     <Chip
-                      label={task.state?.name}
-                      color="primary"
+                      label={
+                        task.typeID === 1
+                          ? `Unicast ${task.state?.name}`
+                          : task.typeID === 8
+                          ? `Multicast ${task.state?.name}`
+                          : task.state?.name
+                      }
+                      color={task.typeID === 1 ? "secondary" : "primary"}
                       size="small"
                     />
                   </Box>
