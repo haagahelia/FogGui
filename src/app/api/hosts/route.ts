@@ -19,7 +19,7 @@ export async function GET() {
     return new Response(error.message, { status: 500 });
   }
 }
-
+/*
 export async function DELETE(req: Request) {
   try {
     const { hostId } = await req.json(); // Extract host ID from request body
@@ -41,4 +41,4 @@ export async function DELETE(req: Request) {
   } catch (error: any) {
     return new Response(error.message, { status: 500 });
   }
-}
+} */

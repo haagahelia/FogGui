@@ -72,7 +72,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    if (body.action === "createGroup") {
+    /* if (body.action === "createGroup") {
       // Handle group creation
       const { name, description } = body;
       if (!name || name.trim() === "") {
@@ -96,7 +96,7 @@ export async function POST(req: Request) {
       // Return created group
       const newGroup = await response.json();
       return new Response(JSON.stringify(newGroup), { status: 201, headers: { "Content-Type": "application/json" } });
-    }
+    } */
 
     if (body.action === "startMulticast") {
       // Handle multicast task
