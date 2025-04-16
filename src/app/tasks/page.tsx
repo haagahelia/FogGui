@@ -1,164 +1,217 @@
-"use client"
-import { useEffect, useState } from "react"
-import { Box, LinearProgress, Typography, TextField, InputAdornment, IconButton } from "@mui/material"
-import SearchIcon from "@mui/icons-material/Search"
-import { DataGrid, type GridColDef } from "@mui/x-data-grid"
+"use client";
 
-interface Task {
-    id: number
-    createdBy?: string
-    hostname?: string
-    imageName?: string
-    createdTime?: string
-    node?: string
-    status?: string
-    percent: number
-    [key: string]: any
-}
+import React, { useEffect, useState, useMemo } from "react";
+import {
+    Box,
+    Typography,
+    LinearProgress,
+    TextField,
+} from "@mui/material";
+import {
+    DataGrid,
+    GridColDef,
+    GridToolbar,
+} from "@mui/x-data-grid";
 
 export default function Tasks() {
-    const [data, setData] = useState<{ tasks: Task[] }>({ tasks: [] })
-    const [filteredTasks, setFilteredTasks] = useState<Task[]>([])
-    const [loading, setLoading] = useState<boolean>(true)
-    const [filters, setFilters] = useState({
-        createdBy: "",
-        hostname: "",
-        imageName: "",
-        createdTime: "",
-        node: "",
-        status: "",
-    })
+    const [data, setData] = useState<{ tasks: any[] }>({ tasks: [] });
+    const [loading, setLoading] = useState(true);
+    const [filters, setFilters] = useState<Record<string, string>>({});
 
-    const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true"
+    const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true";
 
     useEffect(() => {
         const fetchData = async () => {
-            setLoading(true)
             try {
-                const endpoint = useDummyData ? "/dummyTaskData.json" : "/api/tasks"
-                const response = await fetch(endpoint)
+                const endpoint = useDummyData
+                    ? "/dummyTaskData.json"
+                    : "/api/tasks";
+                const response = await fetch(endpoint);
 
-                if (!response.ok) throw new Error(`Failed to fetch tasks: ${response.status} ${response.statusText}`)
+                if (!response.ok) {
+                    throw new Error(
+                        `Failed to fetch tasks: ${response.status} ${response.statusText}`
+                    );
+                }
 
-                const jsonData = await response.json()
+                const jsonData = await response.json();
 
-                const processedTasks = jsonData.tasks.map((task: any, index: number) => ({
-                    id: index,
-                    ...task,
-                    percent: task.percent || 0,
-                    status: task.state?.name || "",
-                    hostname: task.host?.name || task.hostname || "",
-                    imageName: task.image?.name || task.imageName || "",
-                }))
+                if (!jsonData.tasks || !Array.isArray(jsonData.tasks)) {
+                    console.error("Task data is not in expected format:", jsonData);
+                    return;
+                }
 
-                setData({ tasks: processedTasks })
-                setFilteredTasks(processedTasks)
+                setData(jsonData);
             } catch (error) {
-                console.error("Error fetching tasks:", error)
-                alert("Failed to load tasks.")
+                console.error("Error fetching tasks:", error);
+                alert("Failed to load tasks.");
             } finally {
-                setLoading(false)
+                setLoading(false);
             }
-        }
+        };
 
-        fetchData()
-    }, [useDummyData])
+        fetchData();
+    }, []);
 
-    useEffect(() => {
-        const filtered = data.tasks.filter((task) => {
-            return (
-                (task.createdBy || "").toLowerCase().includes(filters.createdBy.toLowerCase()) &&
-                (task.hostname || "").toLowerCase().includes(filters.hostname.toLowerCase()) &&
-                (task.imageName || "").toLowerCase().includes(filters.imageName.toLowerCase()) &&
-                (task.createdTime || "").toLowerCase().includes(filters.createdTime.toLowerCase()) &&
-                (task.node || "").toLowerCase().includes(filters.node.toLowerCase()) &&
-                (task.status || "").toLowerCase().includes(filters.status.toLowerCase())
+    const rows = useMemo(() => {
+        return data.tasks.map((task: any) => ({
+            id: task.id,
+            createdBy: task.createdBy,
+            hostName: task.host?.name ?? "N/A",
+            imageName: task.image?.name ?? "N/A",
+            createdTime: task.createdTime,
+            node: task.node ?? "N/A",
+            status: task.state?.name ?? "N/A",
+            progress: parseFloat(task.percent) || 0,
+        }));
+    }, [data]);
+
+    const filteredRows = useMemo(() => {
+        return rows.filter((row: any) =>
+            Object.entries(filters).every(([key, value]) =>
+                row[key]?.toString().toLowerCase().includes(value.toLowerCase())
             )
-        })
-        setFilteredTasks(filtered)
-    }, [filters, data.tasks])
+        );
+    }, [rows, filters]);
 
     const handleFilterChange = (field: string, value: string) => {
-        setFilters((prev) => ({
-            ...prev,
-            [field]: value,
-        }))
-    }
-
-    // Create interleaved rows with tasks and progress bars
-    const rows = filteredTasks.flatMap((task, index) => [
-        // Regular task row
-        { ...task, isProgressRow: false },
-        // Progress row (with unique ID)
-        {
-            id: `progress-${task.id}`,
-            percent: task.percent,
-            isProgressRow: true,
-            parentId: task.id,
-        },
-    ])
+        setFilters((prev) => ({ ...prev, [field]: value }));
+    };
 
     const columns: GridColDef[] = [
         {
             field: "createdBy",
-            headerName: "Created By",
+            headerName: "Started By",
             flex: 1,
-            renderCell: (params) => {
-                // For progress rows, render progress bar that spans all columns
-                if (params.row.isProgressRow) {
-                    return (
-                        <Box
-                            sx={{
-                                width: "100%",
-                                gridColumn: "1/-1",
-                                position: "absolute",
-                                left: 0,
-                                right: 0,
-                                padding: "0 16px",
-                            }}
-                        >
-                            <LinearProgress variant="determinate" value={params.row.percent} sx={{ height: 8, borderRadius: 5 }} />
-                            <Typography variant="caption" display="block" textAlign="center">
-                                {`${params.row.percent}%`}
-                            </Typography>
-                        </Box>
-                    )
-                }
-                // For regular rows, just show the value
-                return params.value
-            },
+            sortable: true,
+            renderHeader: () => (
+                <FilterHeader
+                    label="Started By"
+                    value={filters.createdBy || ""}
+                    onChange={(val) => handleFilterChange("createdBy", val)}
+                />
+            ),
         },
         {
-            field: "hostname",
-            headerName: "Hostname",
+            field: "hostName",
+            headerName: "Hostname MAC",
             flex: 1,
-            renderCell: (params) => (params.row.isProgressRow ? null : params.value),
+            sortable: true,
+            renderHeader: () => (
+                <FilterHeader
+                    label="Hostname MAC"
+                    value={filters.hostName || ""}
+                    onChange={(val) => handleFilterChange("hostName", val)}
+                />
+            ),
         },
         {
             field: "imageName",
             headerName: "Image Name",
             flex: 1,
-            renderCell: (params) => (params.row.isProgressRow ? null : params.value),
+            sortable: true,
+            renderHeader: () => (
+                <FilterHeader
+                    label="Image Name"
+                    value={filters.imageName || ""}
+                    onChange={(val) => handleFilterChange("imageName", val)}
+                />
+            ),
         },
         {
             field: "createdTime",
-            headerName: "Created Time",
+            headerName: "Start Time",
             flex: 1,
-            renderCell: (params) => (params.row.isProgressRow ? null : params.value),
+            sortable: true,
+            renderHeader: () => (
+                <FilterHeader
+                    label="Start Time"
+                    value={filters.createdTime || ""}
+                    onChange={(val) => handleFilterChange("createdTime", val)}
+                />
+            ),
         },
         {
             field: "node",
-            headerName: "Node",
+            headerName: "Working with Node",
             flex: 1,
-            renderCell: (params) => (params.row.isProgressRow ? null : params.value),
+            sortable: true,
+            renderHeader: () => (
+                <FilterHeader
+                    label="Node"
+                    value={filters.node || ""}
+                    onChange={(val) => handleFilterChange("node", val)}
+                />
+            ),
         },
         {
             field: "status",
             headerName: "Status",
             flex: 1,
-            renderCell: (params) => (params.row.isProgressRow ? null : params.value),
+            sortable: true,
+            renderHeader: () => (
+                <FilterHeader
+                    label="Status"
+                    value={filters.status || ""}
+                    onChange={(val) => handleFilterChange("status", val)}
+                />
+            ),
         },
-    ]
+        {
+            field: "progress",
+            headerName: "Progress",
+            flex: 1,
+            sortable: true,
+            renderHeader: () => (
+                <Typography variant="body2" fontWeight="bold">
+                    Progress
+                </Typography>
+            ),
+            renderCell: (params) => (
+                <Box width="100%">
+                    <LinearProgress
+                        variant="determinate"
+                        value={params.value}
+                        sx={{ height: 8, borderRadius: 5 }}
+                    />
+                    <Typography
+                        variant="caption"
+                        display="block"
+                        textAlign="center"
+                    >
+                        {params.value}%
+                    </Typography>
+                </Box>
+            ),
+        },
+    ];
+
+    let content;
+
+    if (loading) {
+        content = <Typography variant="body1">Loading tasks...</Typography>;
+    } else if (data.tasks.length > 0) {
+        content = (
+            <Box sx={{ height: 600, width: "100%" }}>
+                <DataGrid
+                    rows={filteredRows}
+                    columns={columns}
+                    initialState={{
+                        pagination: { paginationModel: { pageSize: 15, page: 0 } },
+                        sorting: {
+                            sortModel: [{ field: "createdTime", sort: "asc" }],
+                        },
+                    }}
+                    pageSizeOptions={[5, 15, 20]}
+                    disableRowSelectionOnClick
+                    sortingOrder={["asc", "desc", null]}
+                    slots={{ toolbar: GridToolbar }}
+                />
+            </Box>
+        );
+    } else {
+        content = <Typography variant="body1">No tasks available.</Typography>;
+    }
 
     return (
         <Box
@@ -172,62 +225,34 @@ export default function Tasks() {
                 Tasks
             </Typography>
 
-            {/* Filters */}
-            <Box display="flex" gap={2} mb={2} flexWrap="wrap">
-                {Object.keys(filters).map((key) => (
-                    <TextField
-                        key={key}
-                        label={key.charAt(0).toUpperCase() + key.slice(1)}
-                        variant="outlined"
-                        size="small"
-                        value={(filters as any)[key]}
-                        onChange={(e) => handleFilterChange(key, e.target.value)}
-                        InputProps={{
-                            endAdornment: (
-                                <InputAdornment position="end">
-                                    <IconButton>
-                                        <SearchIcon />
-                                    </IconButton>
-                                </InputAdornment>
-                            ),
-                        }}
-                    />
-                ))}
-            </Box>
-
-            {/* DataGrid */}
-            <Box width="100%" height={600}>
-                <DataGrid
-                    rows={rows}
-                    columns={columns}
-                    loading={loading}
-                    disableRowSelectionOnClick
-                    autoHeight
-                    getRowId={(row) => row.id}
-                    getRowHeight={(params) => {
-                        // Make progress rows shorter
-                        return params.model.isProgressRow ? 40 : 52
-                    }}
-                    sx={{
-                        "& .MuiDataGrid-cell": {
-                            alignItems: "center",
-                        },
-                        // Style for progress rows
-                        "& .MuiDataGrid-row:nth-of-type(even)": {
-                            backgroundColor: "rgba(0, 0, 0, 0.02)",
-                        },
-                        // Make progress bar span across all cells
-                        "& .MuiDataGrid-row:nth-of-type(even) .MuiDataGrid-cell:first-of-type": {
-                            overflow: "visible",
-                        },
-                        // Hide cell borders in progress rows
-                        "& .MuiDataGrid-row:nth-of-type(even) .MuiDataGrid-cell": {
-                            borderBottom: "none",
-                        },
-                    }}
-                    hideFooter
-                />
-            </Box>
+            {content}
         </Box>
-    )
+    );
 }
+
+// Reusable component for filterable column headers
+function FilterHeader({
+                          label,
+                          value,
+                          onChange,
+                      }: Readonly<{
+    label: string;
+    value: string;
+    onChange: (val: string) => void;
+}>) {
+    return (
+        <Box display="flex" flexDirection="column">
+            <Typography variant="body2" fontWeight="bold">
+                {label}
+            </Typography>
+            <TextField
+                variant="standard"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder="Filter..."
+                size="small"
+            />
+        </Box>
+    );
+}
+ 
