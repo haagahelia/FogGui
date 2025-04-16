@@ -1,8 +1,8 @@
 // src/middleware.js
 import { getToken } from 'next-auth/jwt';
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 
-export default async function middleware(req: any) {
+export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   console.log('Middleware - Path:', pathname);
