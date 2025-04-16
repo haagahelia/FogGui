@@ -13,6 +13,7 @@
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^6.4.7",
     "@mui/material": "^6.4.10",
+    "@mui/x-data-grid": "^7.28.3",
     "bcryptjs": "^3.0.2",
     "fogproject": "file:",
     "install": "^0.13.0",
