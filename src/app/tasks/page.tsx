@@ -132,19 +132,6 @@ export default function Tasks() {
             ),
         },
         {
-            field: "node",
-            headerName: "Working with Node",
-            flex: 1,
-            sortable: true,
-            renderHeader: () => (
-                <FilterHeader
-                    label="Node"
-                    value={filters.node || ""}
-                    onChange={(val) => handleFilterChange("node", val)}
-                />
-            ),
-        },
-        {
             field: "status",
             headerName: "Status",
             flex: 1,
@@ -255,4 +242,3 @@ function FilterHeader({
         </Box>
     );
 }
- 
