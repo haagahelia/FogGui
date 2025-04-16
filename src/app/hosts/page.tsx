@@ -53,7 +53,7 @@ export default function Hosts() {
   }, []);
 
 
-  const handleDelete = async (hostId: number) => {
+  /* const handleDelete = async (hostId: number) => {
     const confirmDelete = confirm(`Are you sure you want to delete host ${hostId}?`);
     if (!confirmDelete) return;
 
@@ -80,7 +80,7 @@ export default function Hosts() {
       console.error(error);
       alert("Error deleting host.");
     }
-  };
+  }; */
 
   const handleOpenModal = (host: any) => {
     setSelectedHost(host);
@@ -121,9 +121,9 @@ export default function Hosts() {
                 <TableCell>
                   <strong>Status</strong>
                 </TableCell>
-                <TableCell>
+                {/* <TableCell>
                   <strong>Actions</strong>
-                </TableCell>
+                </TableCell> */}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -139,7 +139,7 @@ export default function Hosts() {
                   <TableCell>{host.macs[0]}</TableCell>
                   <TableCell>{host.image.name}</TableCell>
                   <TableCell>{host.pingstatuscode}</TableCell>
-                  <TableCell>
+                  {/* <TableCell>
                     <Button
                       variant="contained"
                       color="error"
@@ -147,7 +147,7 @@ export default function Hosts() {
                     >
                       Delete
                     </Button>
-                  </TableCell>
+                  </TableCell> */}
                 </TableRow>
               ))}
             </TableBody>

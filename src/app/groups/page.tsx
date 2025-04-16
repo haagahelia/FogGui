@@ -17,7 +17,7 @@ import {
   FormControl,
   InputLabel,
 } from "@mui/material";
-import CreateGroupDialog from "@/components/CreateGroupDialog"; // Import the new component
+// import CreateGroupDialog from "@/components/CreateGroupDialog"; // Import the new component
 import { useRouter } from "next/navigation";
 
 export default function Groups() {
@@ -25,7 +25,7 @@ export default function Groups() {
   const [selectedGroup, setSelectedGroup] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [primaryDisk, setPrimaryDisk] = useState<string | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
+ // const [dialogOpen, setDialogOpen] = useState(false);
   const [imageData, setImageData] = useState<any>({ images: [] });
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
@@ -96,7 +96,7 @@ export default function Groups() {
           fetchImageData();
         }, []);
   
-  const handleCreateGroup = async (name: string, description: string) => {
+ /* const handleCreateGroup = async (name: string, description: string) => {
     try {
       const response = await fetch("/api/groups", {
         method: "POST",
@@ -122,7 +122,7 @@ export default function Groups() {
       console.error("Error creating group:", error);
       alert("Failed to create group.");
     }
-  };
+  }; */
 
   const handleGroupClick = (group: any) => {
     setSelectedGroup(group); // Store the whole group object
@@ -301,7 +301,7 @@ export default function Groups() {
           </Box>
         </Modal>
 
-      {/* Create Group Button */}
+      {/*
       <Button
         variant="contained"
         color="primary"
@@ -311,8 +311,9 @@ export default function Groups() {
         Create New Group
       </Button>
 
-      {/* Create Group Dialog */}
+
       <CreateGroupDialog open={dialogOpen} onClose={() => setDialogOpen(false)} onCreate={handleCreateGroup} />
+    */}
     </Box>
   );
 }
