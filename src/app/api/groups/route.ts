@@ -72,7 +72,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    if (body.action === "createGroup") {
+   /* if (body.action === "createGroup") {
       // Handle group creation
       const { name, description } = body;
       if (!name || name.trim() === "") {
@@ -96,7 +96,7 @@ export async function POST(req: Request) {
       // Return created group
       const newGroup = await response.json();
       return new Response(JSON.stringify(newGroup), { status: 201, headers: { "Content-Type": "application/json" } });
-    }
+    } */
 
     if (body.action === "startMulticast") {
       // Handle multicast task
@@ -154,42 +154,6 @@ export async function POST(req: Request) {
       if (!response.ok) {
         const errorText = await response.text();
         return new Response(JSON.stringify({ error: `Failed to start deployment: ${errorText}` }), {
-          status: response.status,
-        });
-      }
-    
-      const responseData = await response.json();
-      return new Response(JSON.stringify({ success: true, data: responseData }), { status: 200 });
-    }
-
-    if (body.action === "fastWipe") {
-      // Handle disk fast wipe
-      const { groupID } = body;
-
-      if (!groupID) {
-        return new Response(JSON.stringify({ error: "Missing groupID for wipe" }), { status: 400 });
-      }
-    
-      const apiUrl = `${process.env.NEXT_PUBLIC_FOG_API_BASE_URL}/fog/group/${groupID}/task`;
-    
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "fog-api-token": process.env.NEXT_PUBLIC_FOG_API_TOKEN || "",
-          "fog-user-token": process.env.NEXT_PUBLIC_FOG_API_USER_KEY || "",
-        },
-        body: JSON.stringify({
-          taskTypeID: "18",    // Fast Wipe
-          isActive: "1",      // Start immediately
-          shutdown: "0",      // Don't shut down after
-          other4: "0",        // No Wake-on-LAN
-        }),
-      });
-    
-      if (!response.ok) {
-        const errorText = await response.text();
-        return new Response(JSON.stringify({ error: `Failed to start wiping: ${errorText}` }), {
           status: response.status,
         });
       }

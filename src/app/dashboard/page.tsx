@@ -116,6 +116,13 @@ export default function Dashboard() {
       console.error("Please select group, image and disk before starting multicast");
       return;
     }
+
+    if (groupSpecificTasks.length > 0) {
+      const confirm = window.confirm(
+        `⚠️ Warning: ${groupSpecificTasks.length} host(s) in this group already have active tasks. Do you want to continue?`
+      );
+      if (!confirm) return;
+    }
     
     fetch("/api/groups", {
       method: "PUT",
@@ -165,6 +172,13 @@ export default function Dashboard() {
       console.error("Please select group, image and disk before starting multicast");
       return;
     }
+
+    if (groupSpecificTasks.length > 0) {
+      const confirm = window.confirm(
+        `⚠️ Warning: ${groupSpecificTasks.length} host(s) in this group already have active tasks. Do you want to continue?`
+      );
+      if (!confirm) return;
+    }
   
     fetch("/api/groups", {
       method: "PUT",
@@ -207,10 +221,67 @@ export default function Dashboard() {
   };
 
 
-  const startFastWipe = () =>
-  {
-
-  }
+  const startFastWipe = async () => {
+    if (!selectedGroup || !selectedPrimaryDisk) {
+      console.error("Please select disk before starting Fast Wipe");
+      alert("⚠️ Please select disk");
+      return;
+    }
+  
+    if (groupSpecificTasks.length > 0) {
+      const confirm = window.confirm(
+        `⚠️ Warning: ${groupSpecificTasks.length} host(s) in this group have active tasks. Do you want to continue?`
+      );
+      if (!confirm) return;
+    }
+  
+    try {
+      console.log("Starting Fast Wipe for", {
+        groupID: selectedGroup?.id,
+        disk: selectedPrimaryDisk,
+      });
+      // Step 1: Set the kernel device (== primary disk)
+      const updateResponse = await fetch("/api/groups/prepareFastWipe", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          groupID: selectedGroup.id,
+          kernelDevice: selectedPrimaryDisk,
+        }),
+      });
+  
+      const updateData = await updateResponse.json();
+      if (!updateResponse.ok) {
+        throw new Error(updateData.error || "Failed to update primary disk.");
+      }
+  
+      // Step 2: Trigger the fast wipe task
+      const startResponse = await fetch("/api/groups/prepareFastWipe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          groupID: selectedGroup.id,
+        }),
+      });
+  
+      const startData = await startResponse.json();
+      if (!startResponse.ok) {
+        throw new Error(startData.error || "Failed to start Fast Wipe task.");
+      }
+  
+      // success
+      console.log("Fast Wipe started successfully:", startData);
+      alert("🎉 Fast Wipe started successfully!");
+  
+      const taskResponse = await fetch("/api/tasks");
+      const taskData = await taskResponse.json();
+      setTasks(taskData.tasks || []);
+    } catch (error: any) {
+      console.error("Fast Wipe error:", error.message || error);
+      alert(`❌ Fast Wipe failed: ${error.message || "Unknown error"}`);
+    }
+  };
+  
     
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
