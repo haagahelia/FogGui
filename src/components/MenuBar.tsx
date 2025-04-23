@@ -25,7 +25,19 @@ const MenuBar = () => {
             <Link href="/tasks" className="hover:text-gray-400">Tasks</Link>
           </li>
           <li>
-            <Link href="/" className="hover:text-red-400" onClick={() => signOut({callbackUrl: '/'})}>Logout</Link> {/* Goes back to login */}
+          <Link
+                href="/"
+                className="hover:text-red-400"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const confirmed = window.confirm("Are you sure you want to log out from FOG GUI?");
+                  if (confirmed) {
+                    signOut({ callbackUrl: '/' });
+                  }
+                }}
+              >
+                Logout
+              </Link>
           </li>
         </ul>
       </div>

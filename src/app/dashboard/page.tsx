@@ -117,6 +117,9 @@ export default function Dashboard() {
       return;
     }
 
+    const confirmMulticast= window.confirm(`Are you sure you want to start MULTICAST session for ${selectedGroup.name}?`);
+    if (!confirmMulticast) return;
+    
     if (groupSpecificTasks.length > 0) {
       const confirm = window.confirm(
         `⚠️ Warning: ${groupSpecificTasks.length} host(s) in this group already have active tasks. Do you want to continue?`
@@ -173,6 +176,9 @@ export default function Dashboard() {
       return;
     }
 
+    const confirmUnicast= window.confirm(`Are you sure you want to start UNICAST for ${selectedGroup.name}?`);
+    if (!confirmUnicast) return;
+
     if (groupSpecificTasks.length > 0) {
       const confirm = window.confirm(
         `⚠️ Warning: ${groupSpecificTasks.length} host(s) in this group already have active tasks. Do you want to continue?`
@@ -227,6 +233,9 @@ export default function Dashboard() {
       alert("⚠️ Please select disk");
       return;
     }
+
+    const confirmFastWipe= window.confirm(`Are you sure you want to start FAST WIPE for ${selectedGroup.name} in Disk ${selectedPrimaryDisk}?`);
+    if (!confirmFastWipe) return;
   
     if (groupSpecificTasks.length > 0) {
       const confirm = window.confirm(
@@ -322,10 +331,10 @@ export default function Dashboard() {
             <Grid item xs={12} md={4}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6">Actions for "{selectedGroup.name}"</Typography>
+                  <Typography variant="h6">Actions for '{selectedGroup.name}'</Typography>
   
                   {/* Image selection */}
-                  <FormControl fullWidth sx={{ marginBottom: 2 }}>
+                  <FormControl fullWidth sx={{ my: 2 }}>
                     <InputLabel id="image-select-label">Select Image</InputLabel>
                     <Select
                       labelId="image-select-label"
