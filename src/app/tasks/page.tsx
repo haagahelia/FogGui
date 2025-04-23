@@ -78,6 +78,21 @@ export default function Tasks() {
         setFilters((prev) => ({ ...prev, [field]: value }));
     };
 
+    const coloringBar = (status: string) => {
+        switch (status) {
+            case "Complete":
+                return "#4caf50";
+            case "In-Progress":
+                return "#2196f3";
+            case "Cancelled":
+                return "#f44336";
+            case "Queued":
+                return "#ff9800";
+            default:
+                return "#9e9e9e";
+        }
+    };
+
     const columns: GridColDef[] = [
         {
             field: "createdBy",
@@ -154,22 +169,34 @@ export default function Tasks() {
                     Progress
                 </Typography>
             ),
-            renderCell: (params) => (
-                <Box width="100%">
-                    <LinearProgress
-                        variant="determinate"
-                        value={params.value}
-                        sx={{ height: 8, borderRadius: 5 }}
-                    />
-                    <Typography
-                        variant="caption"
-                        display="block"
-                        textAlign="center"
-                    >
-                        {params.value}%
-                    </Typography>
-                </Box>
-            ),
+            renderCell: (params) => {
+                const statusColor = coloringBar(params.row.status);
+
+                return (
+                    <Box width="100%">
+                        <LinearProgress
+                            variant="determinate"
+                            value={params.value}
+                            sx={{
+                                height: 8,
+                                borderRadius: 5,
+                                border: "1px solid #ccc",
+                                backgroundColor: "transparent",
+                                [`& .MuiLinearProgress-bar`]: {
+                                    backgroundColor: statusColor,
+                                },
+                            }}
+                        />
+                        <Typography
+                            variant="caption"
+                            display="block"
+                            textAlign="center"
+                        >
+                            {params.value}%
+                        </Typography>
+                    </Box>
+                );
+            },
         },
     ];
 
@@ -217,7 +244,6 @@ export default function Tasks() {
     );
 }
 
-// Reusable component for filterable column headers
 function FilterHeader({
                           label,
                           value,
