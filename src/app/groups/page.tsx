@@ -146,6 +146,9 @@ export default function Groups() {
       console.error("Please select both a primary disk and an image before starting multicast.");
       return;
     }
+
+    const confirmMulticast= window.confirm(`Are you sure you want to start MULTICAST session for ${selectedGroup.name}?`);
+    if (!confirmMulticast) return;
   
     fetch("/api/groups", {
       method: "PUT",
