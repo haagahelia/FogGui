@@ -75,12 +75,20 @@ export default function Dashboard() {
     return <Typography>Loading...</Typography>;
   }
 
-  // Filter tasks with "Queued" or "In-progress" states
-  const activeStatuses = ["Queued", "In-Progress"];
-  const activeTasks = tasks.filter((task: any) =>
-    activeStatuses.includes(task.state?.name)
-  );
+  // Filter tasks by group selected and with "Queued" or "In-progress" states
+  const excludedStateIds = [4, 5]; // Complete, Cancelled
 
+  // Get host IDs that are part of the selected group
+  const groupHostIds = groupAssociations
+    .filter((assoc: any) => assoc.groupID === selectedGroup?.id)
+    .map((assoc: any) => assoc.hostID);
+
+  // Filter tasks that are active and belong to those hosts
+  const groupSpecificTasks = tasks.filter((task: any) =>
+    groupHostIds.includes(task.host?.id) &&
+    !excludedStateIds.includes(task.state?.id)
+  );
+  
   // Map group associations to hosts
   const groupMap = groupAssociations.reduce((hostGroupMap: any, assoc: any) => {
     if (!assoc.hostID || !assoc.groupID)
@@ -197,6 +205,12 @@ export default function Dashboard() {
         alert("❌ An unexpected error occurred.");
       });
   };
+
+
+  const startFastWipe = () =>
+  {
+
+  }
     
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
@@ -290,6 +304,15 @@ export default function Dashboard() {
                   >
                     Start Unicast
                   </Button>
+                  <Button
+                  onClick={startFastWipe}
+                  variant="contained"
+                  color="error"
+                  disabled={!selectedGroup || !selectedPrimaryDisk}
+                  sx={{ mt: 1 }}
+                >
+                  Fast Wipe
+                </Button>
                 </CardContent>
               </Card>
             </Grid>
@@ -298,10 +321,10 @@ export default function Dashboard() {
             <Grid item xs={12} md={4}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6">Active Tasks</Typography>
+                  <Typography variant="h6">Active Tasks in '{selectedGroup.name}'</Typography>
                   <Divider sx={{ my: 1 }} />
-                  {activeTasks.length > 0 ? (
-                    activeTasks.map((task: any) => (
+                  {groupSpecificTasks.length > 0 ? (
+                    groupSpecificTasks.map((task: any) => (
                       <Box
                         key={task.id}
                         display="flex"
@@ -327,7 +350,7 @@ export default function Dashboard() {
                               : task.typeID === 8
                                 ? "primary"
                                 : task.typeID === 18
-                                  ? "warning"
+                                  ? "error"
                                   : "default"
                           }
                           size="small"
