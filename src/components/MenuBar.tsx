@@ -3,6 +3,7 @@ import Link from "next/link";
 import { signOut, useSession } from 'next-auth/react';
 
 const MenuBar = () => {
+  
   const { data: session } = useSession();
 
   return (
@@ -11,6 +12,9 @@ const MenuBar = () => {
         <h2 className="text-xl font-bold">FOG GUI</h2>
 
         <ul className="flex space-x-4">
+          <li>
+          
+          </li>
           <li>
             <Link href="/dashboard" className="hover:text-gray-400">Dashboard</Link>
           </li>
@@ -26,19 +30,6 @@ const MenuBar = () => {
           <li>
             <Link href="/tasks" className="hover:text-gray-400">Tasks</Link>
           </li>
-          
-          {/* Role-based menu options */}
-          {session?.user.role === 'admin' && (
-            <li>
-              <Link href="/admin/create-account" className="hover:text-gray-400">Create Account</Link>
-            </li>
-          )}
-          {session?.user.role === 'user' && (
-            <li>
-              <Link href="/userview" className="hover:text-gray-400">Change Password</Link>
-            </li>
-          )}
-          
           <li>
             <Link
               href="/"
@@ -54,6 +45,17 @@ const MenuBar = () => {
               Logout
             </Link>
           </li>
+          {/* Role-based menu options */}
+          {session?.user.role === 'admin' && (
+            <li>
+              <Link href="/admin/create-account" className="hover:text-gray-400">Create Account</Link>
+            </li>
+          )}
+          {session?.user.role === 'user' && (
+            <li>
+              <Link href="/userview" className="hover:text-gray-400">Change Password</Link>
+            </li>
+          )}
         </ul>
       </div>
     </nav>
