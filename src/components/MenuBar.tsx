@@ -1,59 +1,113 @@
 "use client";
 import Link from "next/link";
-import { signOut, useSession } from 'next-auth/react';
+import { signOut, useSession } from "next-auth/react";
+import { useState, useEffect, useRef } from "react";
+import PersonIcon from "@mui/icons-material/Person";
 
 const MenuBar = () => {
-  
   const { data: session } = useSession();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const dropdownRef = useRef<HTMLDivElement | null>(null); // Reference to the dropdown
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen((prev) => !prev);
+  };
 
   return (
     <nav className="bg-gray-800 text-white p-4">
       <div className="container mx-auto flex justify-between items-center">
         <h2 className="text-xl font-bold">FOG GUI</h2>
 
-        <ul className="flex space-x-4">
+        <ul className="flex space-x-4 items-center">
           <li>
-          
-          </li>
-          <li>
-            <Link href="/dashboard" className="hover:text-gray-400">Dashboard</Link>
-          </li>
-          <li>
-            <Link href="/hosts" className="hover:text-gray-400">Hosts</Link>
-          </li>
-          <li>
-            <Link href="/groups" className="hover:text-gray-400">Groups</Link>
-          </li>
-          <li>
-            <Link href="/images" className="hover:text-gray-400">Images</Link>
-          </li>
-          <li>
-            <Link href="/tasks" className="hover:text-gray-400">Tasks</Link>
-          </li>
-          <li>
-            <Link
-              href="/"
-              className="hover:text-red-400"
-              onClick={(e) => {
-                e.preventDefault();
-                const confirmed = window.confirm("Are you sure you want to log out from FOG GUI?");
-                if (confirmed) {
-                  signOut({ callbackUrl: '/' });
-                }
-              }}
-            >
-              Logout
+            <Link href="/dashboard" className="hover:text-gray-400">
+              Dashboard
             </Link>
           </li>
-          {/* Role-based menu options */}
-          {session?.user.role === 'admin' && (
-            <li>
-              <Link href="/admin/create-account" className="hover:text-gray-400">Create Account</Link>
-            </li>
-          )}
-          {session?.user.role === 'user' && (
-            <li>
-              <Link href="/userview" className="hover:text-gray-400">Change Password</Link>
+          <li>
+            <Link href="/hosts" className="hover:text-gray-400">
+              Hosts
+            </Link>
+          </li>
+          <li>
+            <Link href="/groups" className="hover:text-gray-400">
+              Groups
+            </Link>
+          </li>
+          <li>
+            <Link href="/images" className="hover:text-gray-400">
+              Images
+            </Link>
+          </li>
+          <li>
+            <Link href="/tasks" className="hover:text-gray-400">
+              Tasks
+            </Link>
+          </li>
+
+          {/* User icon and dropdown */}
+          {session?.user && (
+            <li className="relative flex items-center">
+              <div
+                onClick={toggleDropdown} // Toggle dropdown on click
+                className="flex items-center cursor-pointer border-l-2 pl-4"
+              >
+                <div className="rounded-full bg-gray-400 p-2 mr-2">
+                  {/* Material UI Person Icon */}
+                  <PersonIcon style={{ color: "white" }} />
+                </div>
+                <span className="text-white">{session.user.username}</span>
+              </div>
+              {isDropdownOpen && (
+                <div
+                  ref={dropdownRef} // Attach the ref to the dropdown menu
+                  className="absolute left-0 mt-2 w-48 bg-gray-700 text-white rounded-md shadow-lg border border-gray-600"
+                  style={{ top: "100%" }} // Position dropdown below the user icon
+                >
+                  {/* Admin menu */}
+                  {session.user.role === "admin" && (
+                    <>
+                      <Link
+                        href="/userview" // Redirects to the same Change Password page for admins
+                        className="block px-4 py-2 hover:bg-gray-600"
+                      >
+                        Change Password
+                      </Link>
+                      <Link
+                        href="/admin/create-account"
+                        className="block px-4 py-2 hover:bg-gray-600"
+                      >
+                        Create Account
+                      </Link>
+                    </>
+                  )}
+                  {/* User menu */}
+                  {session.user.role === "user" && (
+                    <Link
+                      href="/userview"
+                      className="block px-4 py-2 hover:bg-gray-600"
+                    >
+                      Change Password
+                    </Link>
+                  )}
+                  <Link
+                    href="/"
+                    className="block px-4 py-2 hover:bg-red-600"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const confirmed = window.confirm(
+                        "Are you sure you want to log out from FOG GUI?"
+                      );
+                      if (confirmed) {
+                        signOut({ callbackUrl: "/" });
+                      }
+                    }}
+                  >
+                    Logout
+                  </Link>
+                </div>
+              )}
             </li>
           )}
         </ul>
