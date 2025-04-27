@@ -18,7 +18,8 @@ const initializeDatabase = () => {
         `CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE,
-            password TEXT
+            password TEXT,
+            role TEXT
         )`,
         (err) => {
             if (err) {
@@ -35,7 +36,7 @@ const initializeDatabase = () => {
 const insertTestData = () => {
     db.get("SELECT * FROM users WHERE username = ?", ["fog"], (err, row) => {
         if (!row) {
-            db.run("INSERT INTO users (username, password) VALUES (?, ?)", ["fog", "fog"], (insertErr) => {
+            db.run("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", ["fog", "fog", "admin"], (insertErr) => {
                 if (insertErr) {
                     console.error("Test data insert error:", insertErr.message);
                 } else {

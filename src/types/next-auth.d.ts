@@ -7,6 +7,7 @@ declare module "next-auth" {
     user: {
       id: string;
       username: string;
+      role: string;
       // Optionally add other properties if needed
       // name?: string | null;
       // email?: string | null;
@@ -17,6 +18,7 @@ declare module "next-auth" {
   interface User {
     id: string;
     username: string;
-    password: string;  // Keep password if you need it in the user object, but avoid passing to session
+    password: string;
+    role: string;  // Keep password if you need it in the user object, but avoid passing to session
   }
 }
