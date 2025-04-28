@@ -16,6 +16,8 @@ import {
 } from "@mui/material";
 import { Group } from "@/types/group";
 import { Image } from "@/types/image";
+import { Host } from "@/types/host";
+import { Task } from "@/types/task";
 
 
 export default function Dashboard() {
