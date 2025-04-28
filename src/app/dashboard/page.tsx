@@ -18,12 +18,13 @@ import { Group } from "@/types/group";
 import { Image } from "@/types/image";
 import { Host } from "@/types/host";
 import { Task } from "@/types/task";
+import { Groupassociation } from "@/types/groupassociation";
 
 
 export default function Dashboard() {
-  const [tasks, setTasks] = useState([]);
-  const [groupAssociations, setGroupAssociations] = useState([]);
-  const [hosts, setHosts] = useState([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [groupAssociations, setGroupAssociations] = useState<Groupassociation[]>([]);
+  const [hosts, setHosts] = useState<Host[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [images, setImages] = useState<Image[]>([]);
@@ -280,7 +281,7 @@ export default function Dashboard() {
         throw new Error(startData.error || "Failed to start Fast Wipe task.");
       }
   
-      // success
+      // Success
       console.log("Fast Wipe started successfully:", startData);
       alert("🎉 Fast Wipe started successfully!");
   
