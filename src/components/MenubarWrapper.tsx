@@ -1,18 +1,23 @@
-"use client"; // This marks it as a client-side component
+"use client";
 
 import { usePathname } from "next/navigation";
 import MenuBar from "./MenuBar";
-import { SessionProvider } from "next-auth/react"; // Import SessionProvider
+import { SessionProvider, useSession } from "next-auth/react";
+import { Session } from "next-auth";
 
-export default function MenubarWrapper() {
+type MenubarWrapperProps = {
+  session: Session | null;
+};
+
+export default function MenubarWrapper({ session }: MenubarWrapperProps) {
   const pathname = usePathname();
-  const isLoginPage = pathname === "/"; // Hide menubar on login page
+  const isLoginPage = pathname === "/";
 
   if (isLoginPage) return null;
 
   return (
-    <SessionProvider>
-      <MenuBar />
+    <SessionProvider session={session}>
+      <MenuBar initialSession={session} />
     </SessionProvider>
   );
 }

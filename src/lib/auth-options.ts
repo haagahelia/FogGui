@@ -3,6 +3,14 @@ import bcrypt from 'bcryptjs';
 import { openDb } from '@/lib/db'; // Your database utility
 import { AuthOptions } from 'next-auth';
 
+// Define the shape of your user object
+interface User {
+  id: string;  // id should be a string
+  username: string;
+  role: string;
+  password: string; // Password included for internal use
+}
+
 export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
@@ -17,7 +25,7 @@ export const authOptions: AuthOptions = {
         }
 
         const db = await openDb();
-        const user = await db.get('SELECT * FROM users WHERE username = ?', [
+        const user = await db.get<User>('SELECT * FROM users WHERE username = ?', [
           credentials.username,
         ]);
 
@@ -26,8 +34,13 @@ export const authOptions: AuthOptions = {
         const passwordMatch = bcrypt.compareSync(credentials.password, user.password);
         if (!passwordMatch) return null; // If password does not match, return null
 
-        // Return the user object with id, username, and role
-        return { id: user.id, username: user.username, role: user.role }; // Pass role here
+        // Return the user object with id, username, role, and password (internal use only)
+        return { 
+          id: user.id.toString(), // Convert id to string
+          username: user.username, 
+          role: user.role, 
+          password: user.password 
+        };
       },
     }),
   ],

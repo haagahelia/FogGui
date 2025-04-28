@@ -1,14 +1,21 @@
 "use client";
+
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import PersonIcon from "@mui/icons-material/Person";
+import { Session } from "next-auth";
 
-const MenuBar = () => {
-  const { data: session } = useSession();
+type MenuBarProps = {
+  initialSession: Session | null;
+};
+
+export default function MenuBar({ initialSession }: MenuBarProps) {
+  const { data: sessionClient } = useSession();
+  const session = sessionClient || initialSession; // fallback
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  const dropdownRef = useRef<HTMLDivElement | null>(null); // Reference to the dropdown
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const toggleDropdown = () => {
     setIsDropdownOpen((prev) => !prev);
@@ -50,26 +57,25 @@ const MenuBar = () => {
           {session?.user && (
             <li className="relative flex items-center">
               <div
-                onClick={toggleDropdown} // Toggle dropdown on click
+                onClick={toggleDropdown}
                 className="flex items-center cursor-pointer border-l-2 pl-4"
               >
                 <div className="rounded-full bg-gray-400 p-2 mr-2">
-                  {/* Material UI Person Icon */}
                   <PersonIcon style={{ color: "white" }} />
                 </div>
                 <span className="text-white">{session.user.username}</span>
               </div>
+
               {isDropdownOpen && (
                 <div
-                  ref={dropdownRef} // Attach the ref to the dropdown menu
+                  ref={dropdownRef}
                   className="absolute left-0 mt-2 w-48 bg-gray-700 text-white rounded-md shadow-lg border border-gray-600"
-                  style={{ top: "100%" }} // Position dropdown below the user icon
+                  style={{ top: "100%" }}
                 >
-                  {/* Admin menu */}
                   {session.user.role === "admin" && (
                     <>
                       <Link
-                        href="/userview" // Redirects to the same Change Password page for admins
+                        href="/userview"
                         className="block px-4 py-2 hover:bg-gray-600"
                       >
                         Change Password
@@ -82,7 +88,6 @@ const MenuBar = () => {
                       </Link>
                     </>
                   )}
-                  {/* User menu */}
                   {session.user.role === "user" && (
                     <Link
                       href="/userview"
@@ -114,6 +119,4 @@ const MenuBar = () => {
       </div>
     </nav>
   );
-};
-
-export default MenuBar;
+}
