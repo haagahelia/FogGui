@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import { Group } from "@/types/group";
 import { Image } from "@/types/image";
+import HostModal from "@/components/HostModal";
 
 
 export default function Dashboard() {
@@ -28,6 +29,8 @@ export default function Dashboard() {
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [selectedImage, setSelectedImage] = useState<Image | null>(null);
   const [selectedPrimaryDisk, setSelectedPrimaryDisk] = useState<string | null>(null);
+  const [openModal, setOpenModal] = useState(false);
+  const [selectedHost, setSelectedHost] = useState<any>(null);
 
   const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true";
 
@@ -290,6 +293,18 @@ export default function Dashboard() {
       alert(`❌ Fast Wipe failed: ${error.message || "Unknown error"}`);
     }
   };
+
+  // Function to handle opening the modal
+  const handleOpenModal = (host: any) => {
+    setSelectedHost(host);
+    setOpenModal(true); 
+  };
+
+  // Function to handle closing the modal
+  const handleCloseModal = () => {
+    setOpenModal(false);
+    setSelectedHost(null);
+  };
   
     
   return (
@@ -448,24 +463,64 @@ export default function Dashboard() {
             <Grid item xs={12} md={4}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6">Group Assignments</Typography>
+                  <Typography variant="h6">
+                    Hosts assigned to '{selectedGroup.name}'
+                  </Typography>
+                  <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                    Host count: {hosts.filter((host: any) =>
+                      groupAssociations.some(
+                        (assoc: any) => assoc.groupID === selectedGroup.id && assoc.hostID === host.id
+                      )
+                    ).length}
+                  </Typography>
                   <Divider sx={{ my: 1 }} />
-                  {groupedTasks.length > 0 ? (
-                    groupedTasks.map((task: any, index: number) => (
-                      <Box key={index} display="flex" flexDirection="column" mb={2}>
-                        <Typography>
-                          <strong>Host:</strong> {task.hostName}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          <strong>Groups:</strong> {task.groups.join(", ")}
-                        </Typography>
-                      </Box>
-                    ))
+                  {selectedGroup ? (
+                    hosts
+                      .filter((host: any) =>
+                        groupAssociations.some(
+                          (assoc: any) => assoc.groupID === selectedGroup.id && assoc.hostID === host.id
+                        )
+                      )
+                      .map((host: any) => (
+                        <Box
+                          key={host.id}
+                          display="flex"
+                          flexDirection="column"
+                          mb={1}
+                          p={1}
+                          border="1px solid #ddd"
+                          borderRadius="4px"
+                        >
+                          <Typography
+                            variant="subtitle1"
+                            component="li"
+                            sx={{ ml: 2 }}
+                          >
+                            Host Name:{" "}
+                            <Typography
+                              component="span"
+                              sx={{ cursor: "pointer", color: "blue", textDecoration: "underline" }}
+                              onClick={() => handleOpenModal(host)}
+                            >
+                              {host.name}
+                            </Typography>
+                          </Typography>
+                        </Box>
+                      ))
                   ) : (
-                    <Typography>No group assignments</Typography>
+                    <Typography>No group selected</Typography>
                   )}
                 </CardContent>
               </Card>
+
+              {/* HostModal Component */}
+              {selectedHost && (
+                <HostModal
+                  open={openModal}
+                  onClose={handleCloseModal}
+                  hosts={[selectedHost]}
+                />
+              )}
             </Grid>
           </>
         )}
