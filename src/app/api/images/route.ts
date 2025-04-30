@@ -54,10 +54,12 @@ export async function POST(req: Request) {
               "fog-user-token": process.env.NEXT_PUBLIC_FOG_API_USER_KEY || "",
           },
           body: JSON.stringify({
-              taskTypeID: "1",
+              taskTypeID: "1", // deploy
               isActive: "1",
               shutdown: "0",
-              other4: "1", // Wake-on-LAN
+              other2: "0",
+              other4: "1",
+              wol: "1",
           }),
       });
 
