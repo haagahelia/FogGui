@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -16,9 +16,11 @@ import {
   Select,
   FormControl,
   InputLabel,
+  TextField,
 } from "@mui/material";
 // import CreateGroupDialog from "@/components/CreateGroupDialog"; // Import the new component
 import { useRouter } from "next/navigation";
+import { DataGrid, GridColDef, GridToolbar } from "@mui/x-data-grid";
 
 export default function Groups() {
   const [data, setData] = useState<any>({ groups: [] });
@@ -28,6 +30,7 @@ export default function Groups() {
  // const [dialogOpen, setDialogOpen] = useState(false);
   const [imageData, setImageData] = useState<any>({ images: [] });
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [filters, setFilters] = useState<Record<string, string>>({});
 
   const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true";
 
@@ -52,7 +55,9 @@ export default function Groups() {
   
         jsonData.groups = jsonData.groups.map((group: any) => {
           const date = new Date(group.createdTime);
-          const formattedDate = `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
+          const formattedDate = `${String(date.getDate()).padStart(2, "0")}-${String(
+            date.getMonth() + 1
+          ).padStart(2, "0")}-${date.getFullYear()}`;
           return { ...group, createdTime: formattedDate };
         });
   
@@ -67,36 +72,33 @@ export default function Groups() {
   }, []);
 
   useEffect(() => {
-          const fetchImageData = async () => {
-            try {
-              const endpoint = useDummyData ? "/dummyImageData.json" : "/api/images";
-              const response = await fetch(endpoint);
-        
+    const fetchImageData = async () => {
+      try {
+        const endpoint = useDummyData ? "/dummyImageData.json" : "/api/images";
+        const response = await fetch(endpoint);
   
-              if (!response.ok) {
-                throw new Error(`Failed to fetch images: ${response.statusText}`);
-              }
+        if (!response.ok) {
+          throw new Error(`Failed to fetch images: ${response.statusText}`);
+        }
   
-              const jsonData = await response.json();
-        
+        const jsonData = await response.json();
   
-              if (!jsonData.images || !Array.isArray(jsonData.images)) {
-                console.error("Image data is not in expected format:", jsonData);
-                return;
-              }
-        
-              setImageData(jsonData);
+        if (!jsonData.images || !Array.isArray(jsonData.images)) {
+          console.error("Image data is not in expected format:", jsonData);
+          return;
+        }
+  
+        setImageData(jsonData);
+      } catch (error) {
+        console.error("Error fetching images:", error);
+        alert("Failed to load images.");
+      }
+    };
+  
+    fetchImageData();
+  }, []);
 
-            } catch (error) {
-              console.error("Error fetching images:", error);
-              alert("Failed to load images.");
-            }
-          };
-        
-          fetchImageData();
-        }, []);
-  
- /* const handleCreateGroup = async (name: string, description: string) => {
+  /* const handleCreateGroup = async (name: string, description: string) => {
     try {
       const response = await fetch("/api/groups", {
         method: "POST",
@@ -107,16 +109,16 @@ export default function Groups() {
         }),
         headers: { "Content-Type": "application/json" }
       });
-
+  
       if (!response.ok) {
         throw new Error(`Failed to create group: ${response.statusText}`);
       }
-
+  
       const newGroup = await response.json();
       setData((prevData: any) => ({
         groups: [...prevData.groups, newGroup],
       }));
-
+  
       setDialogOpen(false);
     } catch (error) {
       console.error("Error creating group:", error);
@@ -141,13 +143,12 @@ export default function Groups() {
       return;
     }
   
-  
     if (!primaryDisk || !selectedImage) {
       console.error("Please select both a primary disk and an image before starting multicast.");
       return;
     }
-
-    const confirmMulticast= window.confirm(`Are you sure you want to start MULTICAST session for ${selectedGroup.name}?`);
+  
+    const confirmMulticast = window.confirm(`Are you sure you want to start MULTICAST session for ${selectedGroup.name}?`);
     if (!confirmMulticast) return;
   
     fetch("/api/groups", {
@@ -189,9 +190,106 @@ export default function Groups() {
         alert("❌ An unexpected error occurred.");
       });
   };
-  
-  
 
+  // Create rows for DataGrid from groups data
+  const rows = useMemo(() => {
+    return data.groups?.map((group: any) => ({
+      id: group.id,
+      name: group.name,
+      hostcount: group.hostcount,
+      createdBy: group.createdBy,
+      createdTime: group.createdTime,
+    })) || [];
+  }, [data]);
+  
+  const filteredRows = useMemo(() => {
+    return rows.filter((row: { [key: string]: any }) =>
+      Object.entries(filters).every(([key, value]) =>
+        row[key]?.toString().toLowerCase().includes(value.toLowerCase())
+      )
+    );
+  }, [rows, filters]);
+  
+  const handleFilterChange = (field: string, value: string) => {
+    setFilters(prev => ({ ...prev, [field]: value }));
+  };
+  
+  const columns: GridColDef[] = [
+    {
+      field: "id",
+      headerName: "ID",
+      flex: 0.5,
+      sortable: true,
+      renderHeader: () => (
+        <FilterHeader
+          label="ID"
+          value={filters.id || ""}
+          onChange={(val) => handleFilterChange("id", val)}
+        />
+      ),
+    },
+    {
+      field: "name",
+      headerName: "Name",
+      flex: 1,
+      sortable: true,
+      renderCell: ({ row }) => (
+        <span
+          onClick={() => handleGroupClick(row)}
+          style={{ cursor: "pointer", color: "blue" }}
+        >
+          {row.name} - {row.id}
+        </span>
+      ),
+      renderHeader: () => (
+        <FilterHeader
+          label="Name"
+          value={filters.name || ""}
+          onChange={(val) => handleFilterChange("name", val)}
+        />
+      ),
+    },
+    {
+      field: "hostcount",
+      headerName: "Host Count",
+      flex: 1,
+      sortable: true,
+      renderHeader: () => (
+        <FilterHeader
+          label="Host Count"
+          value={filters.hostcount || ""}
+          onChange={(val) => handleFilterChange("hostcount", val)}
+        />
+      ),
+    },
+    {
+      field: "createdBy",
+      headerName: "Created By",
+      flex: 1,
+      sortable: true,
+      renderHeader: () => (
+        <FilterHeader
+          label="Created By"
+          value={filters.createdBy || ""}
+          onChange={(val) => handleFilterChange("createdBy", val)}
+        />
+      ),
+    },
+    {
+      field: "createdTime",
+      headerName: "Created Time",
+      flex: 1,
+      sortable: true,
+      renderHeader: () => (
+        <FilterHeader
+          label="Created Time"
+          value={filters.createdTime || ""}
+          onChange={(val) => handleFilterChange("createdTime", val)}
+        />
+      ),
+    },
+  ];
+  
   return (
     <Box
       display="flex"
@@ -202,108 +300,95 @@ export default function Groups() {
     >
       <h1>Groups</h1>
       {data.groups?.length > 0 ? (
-        <TableContainer component={Paper} className="table-container">
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell><strong>ID</strong></TableCell>
-                <TableCell><strong>Name</strong></TableCell>
-                <TableCell><strong>Host Count</strong></TableCell>
-                <TableCell><strong>Created By</strong></TableCell>
-                <TableCell><strong>Created Time</strong></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {data.groups.map((group: any) => (
-                <TableRow key={group.id}>
-                  <TableCell>{group.id}</TableCell>
-                  <TableCell
-                    onClick={() => handleGroupClick(group)}
-                    style={{ cursor: "pointer", color: "blue" }}
-                  >
-                    {group.name} - {group.id}
-                  </TableCell>
-                  <TableCell>{group.hostcount}</TableCell>
-                  <TableCell>{group.createdBy}</TableCell>
-                  <TableCell>{group.createdTime}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        // Using DataGrid for sorting and filtering
+        <Box sx={{ height: 600, width: "100%" }}>
+          <DataGrid
+            rows={filteredRows}
+            columns={columns}
+            initialState={{
+              pagination: { paginationModel: { pageSize: 15, page: 0 } },
+              sorting: { sortModel: [{ field: "id", sort: "asc" }] },
+            }}
+            pageSizeOptions={[5, 15, 20]}
+            disableRowSelectionOnClick
+            sortingOrder={["asc", "desc", null]}
+            slots={{ toolbar: GridToolbar }}
+          />
+        </Box>
       ) : (
         <Typography variant="body1">No groups available.</Typography>
       )}
       {/* Modal for Group Details */}
       <Modal
-          open={isModalOpen}
-          onClose={handleModalClose}
-          sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}
+        open={isModalOpen}
+        onClose={handleModalClose}
+        sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}
+      >
+        <Box
+          sx={{
+            backgroundColor: "white",
+            padding: 4,
+            borderRadius: 2,
+            boxShadow: 24,
+            textAlign: "center",
+            maxWidth: 600,
+            width: "80%",
+          }}
         >
-          <Box
-            sx={{
-              backgroundColor: "white",
-              padding: 4,
-              borderRadius: 2,
-              boxShadow: 24,
-              textAlign: "center",
-              maxWidth: 600,
-              width: "80%",
-            }}
-          >
           <Typography variant="h6">
-              {selectedGroup && selectedGroup.name ? selectedGroup.name : ""}
-            </Typography>
-            <Typography variant="body1" sx={{ marginTop: 2 }}>
-              To Multicast:
+            {selectedGroup && selectedGroup.name ? selectedGroup.name : ""}
           </Typography>
-          
-            {/* Dropdown for selecting an image */}
-            <FormControl fullWidth sx={{ marginTop: 3 }}>
-              <InputLabel id="image-select-label">Select Image</InputLabel>
-              <Select
-                labelId="image-select-label"
-                value={selectedImage || ""}
-                onChange={(e) => setSelectedImage(e.target.value)}
-                label="Choose Image"
-              >
-                {imageData.images.map((image: any) => (
-                  <MenuItem key={image.id} value={image.id}>
-                    {image.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            {/* Dropdown for selecting primary disk */}
-            <FormControl fullWidth sx={{ marginTop: 3 }}>
-              <InputLabel id="disk-select-label">Select Primary Disk</InputLabel>
-              <Select
-                labelId="disk-select-label"
-                value={primaryDisk || ""}
-                onChange={(e) => setPrimaryDisk(e.target.value)}
-                label="Select Primary Disk"
-              >
-
-                <MenuItem value="1">Disk 1</MenuItem>
-                <MenuItem value="2">Disk 2</MenuItem>
-              </Select>
-            </FormControl>
-
+          <Typography variant="body1" sx={{ marginTop: 2 }}>
+            To Multicast:
+          </Typography>
+  
+          {/* Dropdown for selecting an image */}
+          <FormControl fullWidth sx={{ marginTop: 3 }}>
+            <InputLabel id="image-select-label">Select Image</InputLabel>
+            <Select
+              labelId="image-select-label"
+              value={selectedImage || ""}
+              onChange={(e) => setSelectedImage(e.target.value)}
+              label="Choose Image"
+            >
+              {imageData.images.map((image: any) => (
+                <MenuItem key={image.id} value={image.id}>
+                  {image.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+  
+          {/* Dropdown for selecting primary disk */}
+          <FormControl fullWidth sx={{ marginTop: 3 }}>
+            <InputLabel id="disk-select-label">Select Primary Disk</InputLabel>
+            <Select
+              labelId="disk-select-label"
+              value={primaryDisk || ""}
+              onChange={(e) => setPrimaryDisk(e.target.value)}
+              label="Select Primary Disk"
+            >
+              <MenuItem value="1">Disk 1</MenuItem>
+              <MenuItem value="2">Disk 2</MenuItem>
+            </Select>
+          </FormControl>
+  
           <Button
             onClick={startMulticast}
-              variant="contained"
-              color="primary"
+            variant="contained"
+            color="primary"
             sx={{ marginTop: 2 }}
             disabled={!selectedImage || !primaryDisk}
-            >
-              Start Multicast
-            </Button>
-
-            <Button onClick={handleModalClose} sx={{ marginTop: 2 }}>Close</Button>
-          </Box>
-        </Modal>
-
+          >
+            Start Multicast
+          </Button>
+  
+          <Button onClick={handleModalClose} sx={{ marginTop: 2 }}>
+            Close
+          </Button>
+        </Box>
+      </Modal>
+  
       {/*
       <Button
         variant="contained"
@@ -313,10 +398,35 @@ export default function Groups() {
       >
         Create New Group
       </Button>
-
-
+  
+  
       <CreateGroupDialog open={dialogOpen} onClose={() => setDialogOpen(false)} onCreate={handleCreateGroup} />
-    */}
+      */}
+    </Box>
+  );
+}
+
+function FilterHeader({
+  label,
+  value,
+  onChange,
+}: Readonly<{
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+}>) {
+  return (
+    <Box display="flex" flexDirection="column">
+      <Typography variant="body2" fontWeight="bold">
+        {label}
+      </Typography>
+      <TextField
+        variant="standard"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Filter..."
+        size="small"
+      />
     </Box>
   );
 }
