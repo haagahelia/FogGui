@@ -147,7 +147,7 @@ export async function POST(req: Request) {
           taskTypeID: "1",    // Unicast deployment
           isActive: "1",      // Start immediately
           shutdown: "0",      // Don't shut down after
-          other4: "0",        // No Wake-on-LAN
+          other4: "1",        // Wake-on-LAN
         }),
       });
     

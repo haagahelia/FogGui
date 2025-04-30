@@ -68,7 +68,7 @@ export async function POST(req: Request) {
           taskTypeID: "18",  // Fast Wipe
           isActive: "1",
           shutdown: "0",
-          other4: "0",
+          other4: "1", // Wake-on-LAN
         }),
       });
   
