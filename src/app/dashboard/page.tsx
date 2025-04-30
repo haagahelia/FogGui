@@ -16,13 +16,17 @@ import {
 } from "@mui/material";
 import { Group } from "@/types/group";
 import { Image } from "@/types/image";
+import { Host } from "@/types/host";
+import { Task } from "@/types/task";
+import { Groupassociation } from "@/types/groupassociation";
+
 import HostModal from "@/components/HostModal";
 
 
 export default function Dashboard() {
-  const [tasks, setTasks] = useState([]);
-  const [groupAssociations, setGroupAssociations] = useState([]);
-  const [hosts, setHosts] = useState([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [groupAssociations, setGroupAssociations] = useState<Groupassociation[]>([]);
+  const [hosts, setHosts] = useState<Host[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [images, setImages] = useState<Image[]>([]);
@@ -281,7 +285,7 @@ export default function Dashboard() {
         throw new Error(startData.error || "Failed to start Fast Wipe task.");
       }
   
-      // success
+      // Success
       console.log("Fast Wipe started successfully:", startData);
       alert("🎉 Fast Wipe started successfully!");
   
@@ -416,40 +420,66 @@ export default function Dashboard() {
             <Grid item xs={12} md={4}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6">Active Tasks in '{selectedGroup.name}'</Typography>
+                  <Typography variant="h6">
+                    Active Tasks in '{selectedGroup.name}'
+                  </Typography>
                   <Divider sx={{ my: 1 }} />
+
                   {groupSpecificTasks.length > 0 ? (
                     groupSpecificTasks.map((task: any) => (
-                      <Box
-                        key={task.id}
-                        display="flex"
-                        justifyContent="space-between"
-                        alignItems="center"
-                        mb={1}
-                      >
-                        <Typography>{task.host?.name || task.name}</Typography>
-                        <Typography>{task.image?.name || "No image"}</Typography>
-                        <Chip
-                          label={
-                            task.typeID === 1
-                              ? `Unicast ${task.state?.name}`
-                              : task.typeID === 8
-                                ? `Multicast ${task.state?.name}`
-                                : task.typeID === 18
-                                  ? `Fast Wipe ${task.state?.name}`
-                                  : task.state?.name
-                          }
-                          color={
-                            task.typeID === 1
-                              ? "secondary"
-                              : task.typeID === 8
-                                ? "primary"
-                                : task.typeID === 18
-                                  ? "error"
-                                  : "default"
-                          }
-                          size="small"
-                        />
+                      <Box key={task.id} mb={2}>
+                        <Box
+                          display="flex"
+                          justifyContent="space-between"
+                          alignItems="center"
+                          gap={1}
+                          flexWrap="wrap"
+                          mb={0.5}
+                        >
+                          <Typography fontSize="0.9rem" flex={1}>
+                            {task.host?.name || task.name}
+                          </Typography>
+                          <Typography fontSize="0.9rem" color="text.secondary" flex={1}>
+                            {task.image?.name || "No image"}
+                          </Typography>
+                          <Chip
+                            label={
+                              task.typeID === 1
+                                ? `Unicast ${task.state?.name}`
+                                : task.typeID === 8
+                                  ? `Multicast ${task.state?.name}`
+                                  : task.typeID === 18
+                                    ? `Fast Wipe ${task.state?.name}`
+                                    : task.state?.name
+                            }
+                            color={
+                              task.typeID === 1
+                                ? "secondary"
+                                : task.typeID === 8
+                                  ? "primary"
+                                  : task.typeID === 18
+                                    ? "error"
+                                    : "default"
+                            }
+                            size="small"
+                          />
+                        </Box>
+
+                        {/* Progress Bar */}
+                        <Box width="100%" height={6} bgcolor="#e0e0e0" borderRadius={4}>
+                          <Box
+                            height="100%"
+                            borderRadius={4}
+                            bgcolor="#1976d2"
+                            width={`${task.percent ?? 0}%`}
+                            sx={{ transition: "width 0.5s ease-in-out" }}
+                          />
+                        </Box>
+
+                        {/* Optional percent label */}
+                        <Typography fontSize="0.7rem" textAlign="right" color="text.secondary">
+                          {task.percent ?? 0}%
+                        </Typography>
                       </Box>
                     ))
                   ) : (
