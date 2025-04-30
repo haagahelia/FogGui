@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
     Table,
     TableBody,
@@ -11,8 +11,10 @@ import {
     Typography,
     Box,
     Modal,
-    Button
+    Button,
+    TextField
 } from "@mui/material";
+import { DataGrid, GridColDef, GridToolbar } from "@mui/x-data-grid";
 
 export default function Images() {
 
@@ -20,6 +22,8 @@ export default function Images() {
     const [hostData, setHostData] = useState<any>({ hosts: [] });
     const [selectedImageID, setSelectedImageID] = useState<number | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    // Added filters state for sorting and filtering similar to Tasks page
+    const [filters, setFilters] = useState<Record<string, string>>({});
 
     const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true"; // Check if we should use dummy data
   
@@ -51,45 +55,42 @@ export default function Images() {
         }
       };
 
-        fetchHostData();
-      }, []);
+      fetchHostData();
+    }, []);
   
-      useEffect(() => {
-        const fetchData = async () => {
-          try {
-            // Determine the data source based on the environment variable
-            const endpoint = useDummyData ? "/dummyImageData.json" : "/api/images";
-            const response = await fetch(endpoint);
+    useEffect(() => {
+      const fetchData = async () => {
+        try {
+          // Determine the data source based on the environment variable
+          const endpoint = useDummyData ? "/dummyImageData.json" : "/api/images";
+          const response = await fetch(endpoint);
       
-
-            if (!response.ok) {
-              throw new Error(`Failed to fetch images: ${response.statusText}`);
-            }
-
-            const jsonData = await response.json();
-      
-
-            if (!jsonData.images || !Array.isArray(jsonData.images)) {
-              console.error("Image data is not in expected format:", jsonData);
-              return;
-            }
-      
-            // Process each image in the images array
-            const formattedImages = jsonData.images.map(formatImageData);
-      
-            // Set the state with the formatted images data
-            setImageData({ images: formattedImages });
-      
-          } catch (error) {
-            console.error("Error fetching images:", error);
-            alert("Failed to load images.");
+          if (!response.ok) {
+            throw new Error(`Failed to fetch images: ${response.statusText}`);
           }
-        };
       
-        fetchData();
-      }, []);
+          const jsonData = await response.json();
       
-
+          if (!jsonData.images || !Array.isArray(jsonData.images)) {
+            console.error("Image data is not in expected format:", jsonData);
+            return;
+          }
+      
+          // Process each image in the images array
+          const formattedImages = jsonData.images.map(formatImageData);
+      
+          // Set the state with the formatted images data
+          setImageData({ images: formattedImages });
+      
+        } catch (error) {
+          console.error("Error fetching images:", error);
+          alert("Failed to load images.");
+        }
+      };
+      
+      fetchData();
+    }, []);
+      
     // Formating image data
     const formatImageData = (image: any) => {
         const formattedDate = formatDate(image.createdTime);
@@ -114,18 +115,17 @@ export default function Images() {
     const handleImageClick = (imageId: number) => {
         setSelectedImageID(imageId);
         setIsModalOpen(true);
-      };
+    };
 
     const handleClose = () => {
         setIsModalOpen(false);
-      };
+    };
 
-      const handleDeployClick = async (hostID: number, imageID: number) => {
+    const handleDeployClick = async (hostID: number, imageID: number) => {
         const confirmDeploy = window.confirm(`Are you sure you want to deploy image ${imageID} to host ${hostID}?`);
         if (!confirmDeploy) return;
     
         try {
-
             const response = await fetch("/api/images", {
                 method: "POST",
                 headers: {
@@ -147,6 +147,97 @@ export default function Images() {
         }
     };
 
+    // Create rows for DataGrid from images data
+    const rows = useMemo(() => {
+      return imageData.images?.map((image: any) => ({
+        id: image.id,
+        name: image.name,
+        storageGroup: image.storagegroupname,
+        sizeGiB: image.sizeGiB,
+        createdTime: image.createdTime,
+        // Include the whole image object if needed for future extensions
+        original: image,
+      })) || [];
+    }, [imageData]);
+
+    // Filter the rows using filters state
+    const filteredRows = useMemo(() => {
+      return rows.filter((row: { [key: string]: any }) =>
+        Object.entries(filters).every(([key, value]) =>
+          row[key]?.toString().toLowerCase().includes(value.toLowerCase())
+        )
+      );
+    }, [rows, filters]);
+
+    const handleFilterChange = (field: string, value: string) => {
+      setFilters(prev => ({ ...prev, [field]: value }));
+    };
+
+    // Define columns for DataGrid with filtering headers (without deleting any comments)
+    const columns: GridColDef[] = [
+      {
+      field: "name",
+      headerName: "Image Name",
+      flex: 1,
+      sortable: true,
+      renderCell: ({ row }) => (
+        <span
+        onClick={() => handleImageClick(row.id)}
+        style={{ cursor: "pointer", color: "blue" }}
+        >
+        {row.name} - {row.id}
+        </span>
+      ),
+      renderHeader: () => (
+        <FilterHeader
+        label="Image Name"
+        value={filters.name || ""}
+        onChange={(val) => handleFilterChange("name", val)}
+        />
+      ),
+      },
+      {
+      field: "storageGroup",
+      headerName: "Storage Group",
+      flex: 1,
+      sortable: true,
+      renderHeader: () => (
+        <FilterHeader
+        label="Storage Group"
+        value={filters.storageGroup || ""}
+        onChange={(val) => handleFilterChange("storageGroup", val)}
+        />
+      ),
+      },
+      {
+      field: "sizeGiB",
+      headerName: "Image Size: ON CLIENT",
+      flex: 1,
+      sortable: true,
+      renderCell: ({ value }) => `${value} GiB`,
+      renderHeader: () => (
+        <FilterHeader
+        label="Image Size: ON CLIENT"
+        value={filters.sizeGiB || ""}
+        onChange={(val) => handleFilterChange("sizeGiB", val)}
+        />
+      ),
+      },
+      {
+      field: "createdTime",
+      headerName: "Captured",
+      flex: 1,
+      sortable: true,
+      renderHeader: () => (
+        <FilterHeader
+        label="Captured"
+        value={filters.createdTime || ""}
+        onChange={(val) => handleFilterChange("createdTime", val)}
+        />
+      ),
+      },
+    ];
+
     return (
         <Box
             display="flex"
@@ -157,47 +248,27 @@ export default function Images() {
         >
             <h1>All Images</h1>
             {imageData.images?.length > 0 ? (
-                <TableContainer component={Paper} className="table-container">
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>
-                                    <strong>Image Name</strong>
-                                </TableCell>
-                                <TableCell>
-                                    <strong>Storage Group</strong>
-                                </TableCell>
-                                <TableCell>
-                                    <strong>Image Size:<br />ON CLIENT</strong>
-                                </TableCell>
-                                <TableCell>
-                                    <strong>Captured</strong>
-                                </TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {imageData.images.map((image: any) => (
-                                <TableRow key={image.id}>
-                                <TableCell
-                                    onClick={() => handleImageClick(image.id)}
-                                    style={{ cursor: "pointer", color: "blue" }}
-                                    >
-                                    {image.name} - {image.id}
-                                    </TableCell>
-                                    <TableCell>{image.storagegroupname}</TableCell>
-                                    <TableCell>{image.sizeGiB} GiB</TableCell>
-                                    <TableCell>{image.createdTime}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-                
+                // Using DataGrid for sorting and filtering instead of Table
+                <Box sx={{ height: 600, width: "100%" }}>
+                  <DataGrid
+                    rows={filteredRows}
+                    columns={columns}
+                    initialState={{
+                      pagination: { paginationModel: { pageSize: 15, page: 0 } },
+                      sorting: { sortModel: [{ field: "id", sort: "asc" }] },
+                    }}
+                    pageSizeOptions={[5, 15, 20]}
+                    disableRowSelectionOnClick
+                    sortingOrder={["asc", "desc", null]}
+                    slots={{ toolbar: GridToolbar }}
+                  />
+                </Box>
             ) : (
                 <Typography variant="body1">No images available.</Typography>
             )}
-
-                <Modal
+            
+            {/* Modal for deploying image to hosts */}
+            <Modal
                open={isModalOpen}
                onClose={handleClose}
                sx={{
@@ -267,6 +338,31 @@ export default function Images() {
                  </Button>
                  </Box>
       </Modal>
+        </Box>
+    );
+}
+
+function FilterHeader({
+  label,
+  value,
+  onChange,
+}: Readonly<{
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+}>) {
+  return (
+    <Box display="flex" flexDirection="column">
+      <Typography variant="body2" fontWeight="bold">
+        {label}
+      </Typography>
+      <TextField
+        variant="standard"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Filter..."
+        size="small"
+      />
     </Box>
-            );
-    }
+  );
+}
