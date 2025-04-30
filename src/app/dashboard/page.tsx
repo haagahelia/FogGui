@@ -47,8 +47,8 @@ export default function Dashboard() {
         const hostEndpoint = useDummyData ? "/dummyData.json" : "/api/hosts";
         const groupEndpoint = useDummyData ? "/dummyGroupData.json" : "/api/groups";
         const imageEndpoint = useDummyData ? "/dummyImageData.json" : "/api/images";
-        
-          
+
+
         const [taskResponse, groupAssocResponse, hostResponse, groupResponse, imageResponse] = await Promise.all([
           fetch(taskEndpoint),
           fetch(assocEndpoint),
@@ -95,7 +95,7 @@ export default function Dashboard() {
     groupHostIds.includes(task.host?.id) &&
     !excludedStateIds.includes(task.state?.id)
   );
-  
+
   // Map group associations to hosts
   const groupMap = groupAssociations.reduce((hostGroupMap: any, assoc: any) => {
     if (!assoc.hostID || !assoc.groupID)
@@ -116,7 +116,7 @@ export default function Dashboard() {
             group.id === groupID) as { id: number; name: string } | undefined)?.name ?? `Unknown group`
       ),
     }));
-  
+
   const startMulticast = () => {
 
     if (!selectedGroup || !selectedImage || !selectedPrimaryDisk) {
@@ -124,16 +124,16 @@ export default function Dashboard() {
       return;
     }
 
-    const confirmMulticast= window.confirm(`Are you sure you want to start MULTICAST session for ${selectedGroup.name}?`);
+    const confirmMulticast = window.confirm(`Are you sure you want to start MULTICAST session for ${selectedGroup.name}?`);
     if (!confirmMulticast) return;
-    
+
     if (groupSpecificTasks.length > 0) {
       const confirm = window.confirm(
         `⚠️ Warning: ${groupSpecificTasks.length} host(s) in this group already have active tasks. Do you want to continue?`
       );
       if (!confirm) return;
     }
-    
+
     fetch("/api/groups", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -147,7 +147,7 @@ export default function Dashboard() {
       .then(async (updateResponse) => {
         const updateData = await updateResponse.json();
         if (!updateResponse.ok) throw new Error(updateData.error || "Failed to update group");
-    
+
         return fetch("/api/groups", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -162,7 +162,7 @@ export default function Dashboard() {
       .then(async (multicastResponse) => {
         const multicastData = await multicastResponse.json();
         if (!multicastResponse.ok) throw new Error(multicastData.error || "Failed to start multicast");
-    
+
         console.log("Multicast started successfully:", multicastData);
         alert("🎉 Multicast started successfully!");
         // After successful multicast, re-fetch the tasks to update the active tasks section
@@ -175,7 +175,7 @@ export default function Dashboard() {
         alert("❌ An unexpected error occurred.");
       });
   };
-  
+
   const startUnicast = () => {
 
     if (!selectedGroup || !selectedImage || !selectedPrimaryDisk) {
@@ -183,7 +183,7 @@ export default function Dashboard() {
       return;
     }
 
-    const confirmUnicast= window.confirm(`Are you sure you want to start UNICAST for ${selectedGroup.name}?`);
+    const confirmUnicast = window.confirm(`Are you sure you want to start UNICAST for ${selectedGroup.name}?`);
     if (!confirmUnicast) return;
 
     if (groupSpecificTasks.length > 0) {
@@ -192,7 +192,7 @@ export default function Dashboard() {
       );
       if (!confirm) return;
     }
-  
+
     fetch("/api/groups", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -206,7 +206,7 @@ export default function Dashboard() {
       .then(async (updateResponse) => {
         const updateData = await updateResponse.json();
         if (!updateResponse.ok) throw new Error(updateData.error || "Failed to update group");
-  
+
         return fetch("/api/groups", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -219,7 +219,7 @@ export default function Dashboard() {
       .then(async (unicastResponse) => {
         const unicastData = await unicastResponse.json();
         if (!unicastResponse.ok) throw new Error(unicastData.error || "Failed to start unicast");
-  
+
         console.log("unicast started successfully:", unicastData);
         alert("🎉 Unicast started successfully!");
 
@@ -241,16 +241,16 @@ export default function Dashboard() {
       return;
     }
 
-    const confirmFastWipe= window.confirm(`Are you sure you want to start FAST WIPE for ${selectedGroup.name} in Disk ${selectedPrimaryDisk}?`);
+    const confirmFastWipe = window.confirm(`Are you sure you want to start FAST WIPE for ${selectedGroup.name} in Disk ${selectedPrimaryDisk}?`);
     if (!confirmFastWipe) return;
-  
+
     if (groupSpecificTasks.length > 0) {
       const confirm = window.confirm(
         `⚠️ Warning: ${groupSpecificTasks.length} host(s) in this group have active tasks. Do you want to continue?`
       );
       if (!confirm) return;
     }
-  
+
     try {
       console.log("Starting Fast Wipe for", {
         groupID: selectedGroup?.id,
@@ -265,12 +265,12 @@ export default function Dashboard() {
           kernelDevice: selectedPrimaryDisk,
         }),
       });
-  
+
       const updateData = await updateResponse.json();
       if (!updateResponse.ok) {
         throw new Error(updateData.error || "Failed to update primary disk.");
       }
-  
+
       // Step 2: Trigger the fast wipe task
       const startResponse = await fetch("/api/groups/prepareFastWipe", {
         method: "POST",
@@ -279,16 +279,16 @@ export default function Dashboard() {
           groupID: selectedGroup.id,
         }),
       });
-  
+
       const startData = await startResponse.json();
       if (!startResponse.ok) {
         throw new Error(startData.error || "Failed to start Fast Wipe task.");
       }
-  
+
       // Success
       console.log("Fast Wipe started successfully:", startData);
       alert("🎉 Fast Wipe started successfully!");
-  
+
       const taskResponse = await fetch("/api/tasks");
       const taskData = await taskResponse.json();
       setTasks(taskData.tasks || []);
@@ -301,7 +301,7 @@ export default function Dashboard() {
   // Function to handle opening the modal
   const handleOpenModal = (host: any) => {
     setSelectedHost(host);
-    setOpenModal(true); 
+    setOpenModal(true);
   };
 
   // Function to handle closing the modal
@@ -309,16 +309,27 @@ export default function Dashboard() {
     setOpenModal(false);
     setSelectedHost(null);
   };
-  
-    
+
+
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
       <Grid container spacing={3}>
-        {/* Group Selector - Always Visible */}
-        <Grid item xs={12}>
-          <Card sx={{ border: '2px solid #1976d2' }}>
+        {/* Left Column: Group Selector and Group Assignments */}
+        <Grid item xs={6} md={3}>
+          {/* Group Selector */}
+          <Card
+            sx={{
+              border: "2px solid #1976d2",
+              borderRadius: 2,
+              boxShadow: 2,
+              background: "#f4f8fd",
+              minWidth: 220,
+              minHeight: 170,
+              mb: 3,
+            }}
+          >
             <CardContent>
-              <Typography variant="h5" sx={{ mb: 2 }}>
+              <Typography variant="h6" sx={{ mb: 2, color: "#1976d2" }}>
                 Select a Group
               </Typography>
               <FormControl fullWidth>
@@ -331,6 +342,8 @@ export default function Dashboard() {
                     setSelectedGroup(group ?? null);
                   }}
                   label="Group"
+                  size="medium"
+                  sx={{ background: "#fff", borderRadius: 1 }}
                 >
                   {groups.map((group: any) => (
                     <MenuItem key={group.id} value={group.id}>
@@ -341,90 +354,149 @@ export default function Dashboard() {
               </FormControl>
             </CardContent>
           </Card>
+
+          {/* Group Assignments */}
+          {selectedGroup && (
+            <Card
+              sx={{
+                boxShadow: 1,
+                borderRadius: 2,
+                background: "#f4f6f8",
+                border: "1.5px solid #1976d2",
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" sx={{ fontSize: "1.1rem" }}>
+                  Hosts Assigned to '{selectedGroup.name}'
+                </Typography>
+                <Typography variant="subtitle1" sx={{ mb: 1, fontSize: "0.95rem" }}>
+                  Host Count:{" "}
+                  {hosts.filter((host) =>
+                    groupAssociations.some(
+                      (assoc) => assoc.groupID === selectedGroup.id && assoc.hostID === host.id
+                    )
+                  ).length}
+                </Typography>
+                <Divider sx={{ my: 1 }} />
+                <Box sx={{ maxHeight: 350, overflowY: "auto", pr: 1 }}>
+                  {hosts
+                    .filter((host) =>
+                      groupAssociations.some(
+                        (assoc) => assoc.groupID === selectedGroup.id && assoc.hostID === host.id
+                      )
+                    )
+                    .map((host) => (
+                      <Box
+                        key={host.id}
+                        display="flex"
+                        flexDirection="column"
+                        alignItems="center"
+                        justifyContent="center"
+                        mb={1}
+                        p={1}
+                        borderBottom={"1.5px solid #e0e0e0"}
+                        maxWidth={220}
+                        mx="auto"
+                      >
+                        <Typography variant="subtitle1" sx={{ fontSize: "0.95rem" }}>
+                          <Typography
+                            component="span"
+                            sx={{ cursor: "pointer", color: "#1976d2", fontWeight: 500 }}
+                            onClick={() => handleOpenModal(host)}
+                          >
+                            {host.name}
+                          </Typography>
+                        </Typography>
+                      </Box>
+                    ))}
+                </Box>
+              </CardContent>
+            </Card>
+          )}
+          {selectedHost && (
+            <HostModal open={openModal} onClose={handleCloseModal} hosts={[selectedHost]} />
+          )}
         </Grid>
-  
-        {/* Only render rest if group is selected */}
+
+        {/* Right Column: Actions and Active Tasks */}
         {selectedGroup && (
-          <>
-            {/* Actions Panel */}
-            <Grid item xs={12} md={4}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6">Actions for '{selectedGroup.name}'</Typography>
-  
-                  {/* Image selection */}
-                  <FormControl fullWidth sx={{ my: 2 }}>
-                    <InputLabel id="image-select-label">Select Image</InputLabel>
-                    <Select
-                      labelId="image-select-label"
-                      value={selectedImage?.id ?? ""}
-                      onChange={(e) => {
-                        const image = images.find((img) => img.id === Number(e.target.value));
-                        setSelectedImage(image ?? null);
-                      }}
-                      label="Select Image"
-                    >
-                      {images.map((image: any) => (
-                        <MenuItem key={image.id} value={image.id}>
-                          {image.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-  
-                  {/* Disk selection */}
-                  <FormControl fullWidth sx={{ marginBottom: 2 }}>
-                    <InputLabel id="disk-select-label">Select Primary Disk</InputLabel>
-                    <Select
-                      labelId="disk-select-label"
-                      value={selectedPrimaryDisk || ""}
-                      onChange={(e) => setSelectedPrimaryDisk(e.target.value)}
-                      label="Select Primary Disk"
-                    >
-                      <MenuItem value="1">Disk 1</MenuItem>
-                      <MenuItem value="2">Disk 2</MenuItem>
-                    </Select>
-                  </FormControl>
-  
-                  {/* Action buttons */}
-                  <Button
-                    onClick={startMulticast}
-                    variant="contained"
-                    sx={{ mr: 1 }}
-                    disabled={!selectedGroup || !selectedImage || !selectedPrimaryDisk}
+          <Grid item xs={6} md={7} lg={8}>
+            <Card sx={{ boxShadow: 2, borderRadius: 2, mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6">Actions for '{selectedGroup.name}'</Typography>
+                {/* Image selection */}
+                <FormControl fullWidth sx={{ my: 2 }}>
+                  <InputLabel id="image-select-label">Select Image</InputLabel>
+                  <Select
+                    labelId="image-select-label"
+                    value={selectedImage?.id ?? ""}
+                    onChange={(e) => {
+                      const image = images.find((img) => img.id === Number(e.target.value));
+                      setSelectedImage(image ?? null);
+                    }}
+                    label="Select Image"
                   >
-                    Start Multicast
-                  </Button>
-                  <Button
-                    onClick={startUnicast}
-                    variant="contained"
-                    color="secondary"
-                    disabled={!selectedGroup || !selectedImage || !selectedPrimaryDisk}
+                    {images.map((image: any) => (
+                      <MenuItem key={image.id} value={image.id}>
+                        {image.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* Disk selection */}
+                <FormControl fullWidth sx={{ marginBottom: 2 }}>
+                  <InputLabel id="disk-select-label">Select Primary Disk</InputLabel>
+                  <Select
+                    labelId="disk-select-label"
+                    value={selectedPrimaryDisk || ""}
+                    onChange={(e) => setSelectedPrimaryDisk(e.target.value)}
+                    label="Select Primary Disk"
                   >
-                    Start Unicast
-                  </Button>
-                  <Button
+                    <MenuItem value="1">Disk 1</MenuItem>
+                    <MenuItem value="2">Disk 2</MenuItem>
+                  </Select>
+                </FormControl>
+
+                {/* Action buttons */}
+                <Button
+                  onClick={startMulticast}
+                  variant="contained"
+                  sx={{ m: 0.5 }}
+                  disabled={!selectedGroup || !selectedImage || !selectedPrimaryDisk}
+                >
+                  Start Multicast
+                </Button>
+                <Button
+                  onClick={startUnicast}
+                  variant="contained"
+                  color="secondary"
+                  sx={{ m: 0.5 }}
+                  disabled={!selectedGroup || !selectedImage || !selectedPrimaryDisk}
+                >
+                  Start Unicast
+                </Button>
+                <Button
                   onClick={startFastWipe}
                   variant="contained"
                   color="error"
                   disabled={!selectedGroup || !selectedPrimaryDisk}
-                  sx={{ mt: 1 }}
+                  sx={{ m: 0.5 }}
                 >
                   Fast Wipe
                 </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-  
-            {/* Active Tasks */}
-            <Grid item xs={12} md={4}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6">
-                    Active Tasks in '{selectedGroup.name}'
-                  </Typography>
-                  <Divider sx={{ my: 1 }} />
+              </CardContent>
+            </Card>
 
+            {/* Active Tasks */}
+            <Card sx={{ boxShadow: 2, borderRadius: 2, background: "#f8fafc" }}>
+              <CardContent>
+                <Typography variant="h6">
+                  Active Tasks in '{selectedGroup.name}'
+                </Typography>
+                <Divider sx={{ my: 1 }} />
+
+                <Box sx={{ maxHeight: 360, overflowY: "auto" }}>
                   {groupSpecificTasks.length > 0 ? (
                     groupSpecificTasks.map((task: any) => (
                       <Box key={task.id} mb={2}>
@@ -476,7 +548,6 @@ export default function Dashboard() {
                           />
                         </Box>
 
-                        {/* Optional percent label */}
                         <Typography fontSize="0.7rem" textAlign="right" color="text.secondary">
                           {task.percent ?? 0}%
                         </Typography>
@@ -485,74 +556,10 @@ export default function Dashboard() {
                   ) : (
                     <Typography>No active tasks</Typography>
                   )}
-                </CardContent>
-              </Card>
-            </Grid>
-  
-            {/* Group Assignments */}
-            <Grid item xs={12} md={4}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6">
-                    Hosts assigned to '{selectedGroup.name}'
-                  </Typography>
-                  <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                    Host count: {hosts.filter((host: any) =>
-                      groupAssociations.some(
-                        (assoc: any) => assoc.groupID === selectedGroup.id && assoc.hostID === host.id
-                      )
-                    ).length}
-                  </Typography>
-                  <Divider sx={{ my: 1 }} />
-                  {selectedGroup ? (
-                    hosts
-                      .filter((host: any) =>
-                        groupAssociations.some(
-                          (assoc: any) => assoc.groupID === selectedGroup.id && assoc.hostID === host.id
-                        )
-                      )
-                      .map((host: any) => (
-                        <Box
-                          key={host.id}
-                          display="flex"
-                          flexDirection="column"
-                          mb={1}
-                          p={1}
-                          border="1px solid #ddd"
-                          borderRadius="4px"
-                        >
-                          <Typography
-                            variant="subtitle1"
-                            component="li"
-                            sx={{ ml: 2 }}
-                          >
-                            Host Name:{" "}
-                            <Typography
-                              component="span"
-                              sx={{ cursor: "pointer", color: "blue", textDecoration: "underline" }}
-                              onClick={() => handleOpenModal(host)}
-                            >
-                              {host.name}
-                            </Typography>
-                          </Typography>
-                        </Box>
-                      ))
-                  ) : (
-                    <Typography>No group selected</Typography>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* HostModal Component */}
-              {selectedHost && (
-                <HostModal
-                  open={openModal}
-                  onClose={handleCloseModal}
-                  hosts={[selectedHost]}
-                />
-              )}
-            </Grid>
-          </>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
         )}
       </Grid>
     </Box>
