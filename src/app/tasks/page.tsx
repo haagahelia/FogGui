@@ -221,31 +221,51 @@ export default function Tasks() {
         return isRowSelectable(params) ? 'selectable-row' : 'non-selectable-row';
     };
 
-    const handleCancelTasks = () => {
+    const handleCancelTasks = async () => {
         if (selectedTasksId.length === 0) return alert("No tasks selected");
 
         const confirmed = window.confirm("Are you sure you want to cancel the selected task(s)?");
 
         if (confirmed) {
-            const selectedTasks = rows.filter(row => selectedTasksId.includes(row.id));
+            try {
+                // Cancel selected tasks by sending a PUT request for each task
+                const cancelRoute = selectedTasksId.map((taskId) =>
+                    fetch(`/api/tasks`, {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({ taskId }),
+                    })
+                );
 
-            const updatedTasks = data.tasks.map((task) => {
-                if (selectedTasksId.includes(task.id)) {
-                    return {
-                        ...task,
-                        state: { name: "Cancelled" },
-                        percent: 0,
-                    };
-                }
-                return task;
-            });
+                // Wait for all cancellation requests to complete
+                await Promise.all(cancelRoute);
 
-            setData({ tasks: updatedTasks });
-            alert(`Canceled ${selectedTasks.length} task(s).`);
+                // Update the task status locally
+                const updatedTasks = data.tasks.map((task) => {
+                    if (selectedTasksId.includes(task.id)) {
+                        return {
+                            ...task,
+                            state: { name: "Cancelled" },
+                            percent: 0,
+                        };
+                    }
+                    return task;
+                });
+
+                setData({ tasks: updatedTasks });
+
+                alert(`Cancelled ${selectedTasksId.length} task(s).`);
+            } catch (error) {
+                console.error("Error cancelling task(s):", error);
+                alert("Failed to cancel task(s).");
+            }
         } else {
             alert("No tasks were canceled.");
         }
     };
+
 
 
 
