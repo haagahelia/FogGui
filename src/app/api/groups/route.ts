@@ -114,7 +114,14 @@ export async function POST(req: Request) {
           "fog-api-token": process.env.NEXT_PUBLIC_FOG_API_TOKEN || "",
           "fog-user-token": process.env.NEXT_PUBLIC_FOG_API_USER_KEY || "",
         },
-        body: JSON.stringify({ taskTypeID, name }),
+        body: JSON.stringify({
+          taskTypeID, name,
+          isActive: "1",
+          shutdown: "0",
+          other2: "0",
+          other4: "1",
+          wol: "1",
+         }),
       });
 
       if (!response.ok) {
@@ -145,9 +152,11 @@ export async function POST(req: Request) {
         },
         body: JSON.stringify({
           taskTypeID: "1",    // Unicast deployment
-          isActive: "1",      // Start immediately
-          shutdown: "0",      // Don't shut down after
-          other4: "1",        // Wake-on-LAN
+          isActive: "1",
+          shutdown: "0",
+          other2: "0",
+          other4: "1",
+          wol: "1",
         }),
       });
     
