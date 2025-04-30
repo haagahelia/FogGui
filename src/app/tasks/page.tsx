@@ -6,17 +6,22 @@ import {
     Typography,
     LinearProgress,
     TextField,
+    Button
 } from "@mui/material";
 import {
     DataGrid,
     GridColDef,
     GridToolbar,
+    GridRowParams,
 } from "@mui/x-data-grid";
+import { GRID_CHECKBOX_SELECTION_COL_DEF } from "@mui/x-data-grid";
 
+// Main functional component for Tasks
 export default function Tasks() {
     const [data, setData] = useState<{ tasks: any[] }>({ tasks: [] });
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState<Record<string, string>>({});
+    const [selectedTasksId, setSelectedTasksId] = useState<number[]>([]);
 
     const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true";
 
@@ -53,6 +58,7 @@ export default function Tasks() {
         fetchData();
     }, []);
 
+    // Memoized rows for the table, mapped from the fetched task data
     const rows = useMemo(() => {
         return data.tasks.map((task: any) => ({
             id: task.id,
@@ -66,6 +72,7 @@ export default function Tasks() {
         }));
     }, [data]);
 
+    // Filter the rows based on active filters
     const filteredRows = useMemo(() => {
         return rows.filter((row: any) =>
             Object.entries(filters).every(([key, value]) =>
@@ -74,10 +81,12 @@ export default function Tasks() {
         );
     }, [rows, filters]);
 
+    // Update filters when the user types something in filter fields
     const handleFilterChange = (field: string, value: string) => {
         setFilters((prev) => ({ ...prev, [field]: value }));
     };
 
+    // Color the progress bar based on task status
     const coloringBar = (status: string) => {
         switch (status) {
             case "Complete":
@@ -93,7 +102,9 @@ export default function Tasks() {
         }
     };
 
+    // Columns for the DataGrid
     const columns: GridColDef[] = [
+        { ...GRID_CHECKBOX_SELECTION_COL_DEF }, // Checkbox column
         {
             field: "createdBy",
             headerName: "Started By",
@@ -200,6 +211,44 @@ export default function Tasks() {
         },
     ];
 
+    // Define which rows can be selected
+    const isRowSelectable = (params: GridRowParams<any>) => {
+        return params.row.status === "In-Progress" || params.row.status === "Queued";
+    };
+
+    // Add the class for each row to conditionally show or hide checkboxes
+    const getRowClass = (params: GridRowParams) => {
+        return isRowSelectable(params) ? 'selectable-row' : 'non-selectable-row';
+    };
+
+    const handleCancelTasks = () => {
+        if (selectedTasksId.length === 0) return alert("No tasks selected");
+
+        const confirmed = window.confirm("Are you sure you want to cancel the selected task(s)?");
+
+        if (confirmed) {
+            const selectedTasks = rows.filter(row => selectedTasksId.includes(row.id));
+
+            const updatedTasks = data.tasks.map((task) => {
+                if (selectedTasksId.includes(task.id)) {
+                    return {
+                        ...task,
+                        state: { name: "Cancelled" },
+                        percent: 0,
+                    };
+                }
+                return task;
+            });
+
+            setData({ tasks: updatedTasks });
+            alert(`Canceled ${selectedTasks.length} task(s).`);
+        } else {
+            alert("No tasks were canceled.");
+        }
+    };
+
+
+
     let content;
 
     if (loading) {
@@ -208,6 +257,9 @@ export default function Tasks() {
         content = (
             <Box sx={{ height: 600, width: "100%" }}>
                 <DataGrid
+                    checkboxSelection
+                    isRowSelectable={isRowSelectable}
+                    onRowSelectionModelChange={(ids) => setSelectedTasksId(ids as number[])}
                     rows={filteredRows}
                     columns={columns}
                     initialState={{
@@ -220,6 +272,12 @@ export default function Tasks() {
                     disableRowSelectionOnClick
                     sortingOrder={["asc", "desc", null]}
                     slots={{ toolbar: GridToolbar }}
+                    getRowClassName={getRowClass} // Apply the class to hide checkboxes for non-selectable rows
+                    sx={{
+                        '& .non-selectable-row .MuiDataGrid-cellCheckbox': {
+                            visibility: 'hidden', // Hide the checkbox for non-selectable rows
+                        },
+                    }}
                 />
             </Box>
         );
@@ -228,22 +286,35 @@ export default function Tasks() {
     }
 
     return (
-        <Box
+        <><Box
             display="flex"
             flexDirection="column"
             alignItems="center"
             justifyContent="center"
-            sx={{ border: "3px solid #ccc", padding: 5, borderRadius: 2 }}
+            sx={{border: "3px solid #ccc", padding: 5, borderRadius: 2}}
         >
             <Typography variant="h4" gutterBottom>
                 Tasks
             </Typography>
 
             {content}
+            <Button variant="outlined"  onClick={handleCancelTasks} sx={{
+                mt: 2.5,
+                color: "red",
+                borderColor: "red",
+                "&:hover": {
+                    backgroundColor: "red",
+                    borderColor: "red",
+                    color: "black"
+                },
+            }}>Cancel selected tasks</Button>
         </Box>
-    );
+        </>
+
+);
 }
 
+// Filter header component for each column's filter input
 function FilterHeader({
                           label,
                           value,
@@ -266,5 +337,6 @@ function FilterHeader({
                 size="small"
             />
         </Box>
+
     );
 }
