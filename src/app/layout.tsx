@@ -1,19 +1,18 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-options";
-import MenubarWrapper from "@/components/MenubarWrapper";
-import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 import "./../styles/globals.css";
+import MenubarWrapper from "@/components/MenubarWrapper";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth-options"; // Your NextAuth config
 
-export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const session = await getServerSession(authOptions);
+export default async function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
+  const session = await getServerSession(authOptions); // Fetch session on server side
 
   return (
     <html lang="en">
       <body>
-        <SessionProviderWrapper session={session}>
-          <MenubarWrapper session={session} />
-          <main>{children}</main>
-        </SessionProviderWrapper>
+        <MenubarWrapper session={session} /> {/* Pass session as prop */}
+        <main>{children}</main>
       </body>
     </html>
   );

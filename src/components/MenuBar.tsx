@@ -2,20 +2,17 @@
 
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import PersonIcon from "@mui/icons-material/Person";
-import { Session } from "next-auth";
+import {Session} from 'next-auth'
 
-type MenuBarProps = {
-  initialSession: Session | null;
-};
+// Define the type for the MenuBar props
+interface MenuBarProps {
+  session: Session | null;
+}
 
-export default function MenuBar({ initialSession }: MenuBarProps) {
-  const { data: sessionClient } = useSession();
-  const session = sessionClient || initialSession; // fallback
-
+const MenuBar = ({ session }: MenuBarProps) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const toggleDropdown = () => {
     setIsDropdownOpen((prev) => !prev);
@@ -25,7 +22,6 @@ export default function MenuBar({ initialSession }: MenuBarProps) {
     <nav className="bg-gray-800 text-white p-4">
       <div className="container mx-auto flex justify-between items-center">
         <h2 className="text-xl font-bold">FOG GUI</h2>
-
         <ul className="flex space-x-4 items-center">
           <li>
             <Link href="/dashboard" className="hover:text-gray-400">
@@ -52,12 +48,11 @@ export default function MenuBar({ initialSession }: MenuBarProps) {
               Tasks
             </Link>
           </li>
-
           {/* User icon and dropdown */}
           {session?.user && (
             <li className="relative flex items-center">
               <div
-                onClick={toggleDropdown}
+                onClick={toggleDropdown} // Toggle dropdown on click
                 className="flex items-center cursor-pointer border-l-2 pl-4"
               >
                 <div className="rounded-full bg-gray-400 p-2 mr-2">
@@ -65,12 +60,10 @@ export default function MenuBar({ initialSession }: MenuBarProps) {
                 </div>
                 <span className="text-white">{session.user.username}</span>
               </div>
-
               {isDropdownOpen && (
                 <div
-                  ref={dropdownRef}
                   className="absolute left-0 mt-2 w-48 bg-gray-700 text-white rounded-md shadow-lg border border-gray-600"
-                  style={{ top: "100%" }}
+                  style={{ top: "100%" }} // Position dropdown below the user icon
                 >
                   {session.user.role === "admin" && (
                     <>
@@ -119,4 +112,6 @@ export default function MenuBar({ initialSession }: MenuBarProps) {
       </div>
     </nav>
   );
-}
+};
+
+export default MenuBar;
