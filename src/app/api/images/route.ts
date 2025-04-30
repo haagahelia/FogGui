@@ -57,7 +57,7 @@ export async function POST(req: Request) {
               taskTypeID: "1",
               isActive: "1",
               shutdown: "0",
-              other4: "0",
+              other4: "1", // Wake-on-LAN
           }),
       });
 
