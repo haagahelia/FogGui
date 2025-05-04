@@ -1,23 +1,13 @@
 "use client";
-
+import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import MenuBar from "./MenuBar";
-import { SessionProvider } from "next-auth/react";
-import { Session } from "next-auth";
 
-type MenubarWrapperProps = {
-  session: Session | null;
-};
-
-export default function MenubarWrapper({ session }: MenubarWrapperProps) {
+export default function MenubarWrapper() {
+  const { data: session, status } = useSession();
   const pathname = usePathname();
-  const isLoginPage = pathname === "/";
 
-  if (isLoginPage) return null;
+  if (pathname === "/" || status === "loading") return null;
 
-  return (
-    <SessionProvider session={session}>
-      <MenuBar session={session} /> {/* Pass session to MenuBar */}
-    </SessionProvider>
-  );
+  return <MenuBar session={session} />;
 }

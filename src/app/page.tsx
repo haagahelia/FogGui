@@ -2,11 +2,12 @@
 
 import { useState, useRef } from 'react';
 import { Container, TextField, Button, Typography, Box } from '@mui/material';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
 export default function Login() {
   const router = useRouter();
+  const { update } = useSession();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -25,7 +26,10 @@ export default function Login() {
       setError('Invalid username or password');
       setTimeout(() => setError(''), 3000);
     } else {
-      router.push('/dashboard'); // Redirect on success
+      // Force update the client-side session
+      await update();
+      router.push('/dashboard');
+      router.refresh(); // Optional: ensures all client components get fresh data
     }
   };
 
