@@ -222,51 +222,38 @@ export default function Tasks() {
     };
 
     const handleCancelTasks = async () => {
+
         if (selectedTasksId.length === 0) return alert("No tasks selected");
 
         const confirmed = window.confirm("Are you sure you want to cancel the selected task(s)?");
 
-        if (confirmed) {
-            try {
-                // Cancel selected tasks by sending a PUT request for each task
-                const cancelRoute = selectedTasksId.map((taskId) =>
-                    fetch(`/api/tasks`, {
-                        method: "PUT",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({ taskId }),
-                    })
-                );
+        if (!confirmed) return alert("No tasks were canceled.");
 
-                // Wait for all cancellation requests to complete
-                await Promise.all(cancelRoute);
+        try {
 
-                // Update the task status locally
-                const updatedTasks = data.tasks.map((task) => {
-                    if (selectedTasksId.includes(task.id)) {
-                        return {
-                            ...task,
-                            state: { name: "Cancelled" },
-                            percent: 0,
-                        };
-                    }
-                    return task;
-                });
+            const response = await fetch("/api/tasks", {
 
-                setData({ tasks: updatedTasks });
+                method: "PUT",
 
-                alert(`Cancelled ${selectedTasksId.length} task(s).`);
-            } catch (error) {
-                console.error("Error cancelling task(s):", error);
-                alert("Failed to cancel task(s).");
-            }
-        } else {
-            alert("No tasks were canceled.");
+                headers: { "Content-Type": "application/json" },
+
+                body: JSON.stringify({ taskIds: selectedTasksId }), // send all at once
+
+            });
+
+            const result = await response.text();
+
+            if (!response.ok) throw new Error(result);
+
+            alert(`Cancelled ${selectedTasksId.length} task(s).`);
+
+        } catch (error: any) {
+
+            alert("Failed to cancel tasks: " + error.message);
+
         }
+
     };
-
-
 
 
     let content;
@@ -279,8 +266,10 @@ export default function Tasks() {
                 <DataGrid
                     checkboxSelection
                     isRowSelectable={isRowSelectable}
-                    onRowSelectionModelChange={(ids) => setSelectedTasksId(ids as number[])}
+                    onRowSelectionModelChange={(ids) => setSelectedTasksId(ids as number[])
+                    }
                     rows={filteredRows}
+                   //onClick={console.log(selectedTasksId)}
                     columns={columns}
                     initialState={{
                         pagination: { paginationModel: { pageSize: 15, page: 0 } },
