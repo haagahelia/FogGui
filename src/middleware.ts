@@ -1,32 +1,33 @@
-// src/middleware.js
 import { getToken } from 'next-auth/jwt';
 import { NextResponse, NextRequest } from 'next/server';
 
-export default async function middleware(req: NextRequest) {
+export default async function middleware(req: any) {
   const { pathname } = req.nextUrl;
 
   console.log('Middleware - Path:', pathname);
 
-  // List of protected routes
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  console.log('Middleware - Token:', token);
+
   const protectedRoutes = ['/dashboard', '/hosts', '/images', '/groups', '/tasks'];
+  const adminOnlyRoutes = ['/admin'];
 
-  // Check if the user is trying to access a protected route
-  if (protectedRoutes.some((route) => pathname.startsWith(route))) {
-    
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-
-    console.log('Middleware - Token:', token);
-
-    // If the user is not authenticated, redirect to the login page
-
+  // Redirect unauthenticated users from any protected route
+  if ([...protectedRoutes, ...adminOnlyRoutes].some(route => pathname.startsWith(route))) {
     if (!token) {
-      console.log('Middleware - Redirecting to login');
+      console.log('Middleware - Redirecting to login (unauthenticated)');
       return NextResponse.redirect(new URL('/', req.url));
     }
   }
 
-  // Allow the request to proceed if the user is authenticated or accessing a public route
-  
+  // Redirect non-admin users from admin routes
+  if (adminOnlyRoutes.some(route => pathname.startsWith(route))) {
+    if (token?.role !== 'admin') {
+      console.log('Middleware - Redirecting to dashboard (not admin)');
+      return NextResponse.redirect(new URL('/dashboard', req.url));
+    }
+  }
+
   return NextResponse.next();
 }
 
