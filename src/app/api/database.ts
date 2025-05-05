@@ -1,49 +1,59 @@
 import path from "path";
 import sqlite3 from "sqlite3";
+import bcrypt from "bcryptjs";  // Import bcrypt for password hashing
 
 const dbPath = path.join(process.cwd(), "user.db"); // Database file path
 
+// Open the SQLite database
 export const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
     if (err) {
         console.error("Database connection error:", err.message);
     } else {
         console.log("Connected to SQLite database.");
-        initializeDatabase(); // Insert test data
+        initializeDatabase(); // Initialize database (create table and insert test data)
     }
 });
 
 // Create table and insert test data
 const initializeDatabase = () => {
+    // Create the users table if it doesn't exist
     db.run(
         `CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE,
-            password TEXT
+            password TEXT,
+            role TEXT
         )`,
-        (err) => {
+        function (err) {
             if (err) {
                 console.error("Table creation error:", err.message);
             } else {
                 console.log("Users table ready.");
-                insertTestData();
+                insertTestData(); // Call insertTestData only after table is created
             }
         }
     );
 };
 
-// Insert test user (fog, fog)
+// Insert test user (admin with encrypted password)
 const insertTestData = () => {
-    db.get("SELECT * FROM users WHERE username = ?", ["fog"], (err, row) => {
+    db.get("SELECT * FROM users WHERE username = ?", ["admin"], (err, row) => {
+        if (err) {
+            console.error("Error checking user existence:", err.message);
+            return;
+        }
+
         if (!row) {
-            db.run("INSERT INTO users (username, password) VALUES (?, ?)", ["fog", "fog"], (insertErr) => {
+            const passwordHash = bcrypt.hashSync("admin", 10);  // Hash the password
+            db.run("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", ["admin", passwordHash, "admin"], (insertErr) => {
                 if (insertErr) {
                     console.error("Test data insert error:", insertErr.message);
                 } else {
-                    console.log("Test user 'fog' added.");
+                    console.log("Test user 'admin' added with encrypted password.");
                 }
             });
         } else {
-            console.log("Test user 'fog' already exists.");
+            console.log("Test user 'admin' already exists.");
         }
     });
 };

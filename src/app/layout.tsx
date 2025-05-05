@@ -1,18 +1,23 @@
 import "./../styles/globals.css";
-import MenuBar from "@/components/MenuBar";
 import MenubarWrapper from "@/components/MenubarWrapper";
-import { db } from "./api/database";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth-options";
+import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
+  const session = await getServerSession(authOptions);
+
   return (
     <html lang="en">
       <body>
-        <MenubarWrapper />
-        <main>{children}</main>
+        <SessionProviderWrapper session={session}>
+          <MenubarWrapper /> {/* Remove session prop here */}
+          <main>{children}</main>
+        </SessionProviderWrapper>
       </body>
     </html>
   );
