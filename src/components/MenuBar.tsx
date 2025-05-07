@@ -98,6 +98,7 @@ const MenuBar = ({ session }: MenuBarProps) => {
                         "Are you sure you want to log out from FOG GUI?"
                       );
                       if (confirmed) {
+                        localStorage.removeItem("selectedGroup")
                         signOut({ callbackUrl: "/" });
                       }
                     }}

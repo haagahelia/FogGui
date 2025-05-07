@@ -81,6 +81,22 @@ export default function Dashboard() {
     fetchData();
   }, []);
 
+  // Load selected group from local storage on component mount
+  useEffect(() => {
+    const storedGroupID = localStorage.getItem("selectedGroup");
+    if (storedGroupID) {
+      const foundGroup = groups.find((g: any) => g.id === Number(storedGroupID));
+      if (foundGroup) setSelectedGroup(foundGroup);
+    }
+  }, [groups]);
+
+  // Save selected group to local storage whenever it changes
+  useEffect(() => {
+    if (selectedGroup) {
+      localStorage.setItem("selectedGroup", String(selectedGroup.id));
+    }
+  }, [selectedGroup]);
+
   if (loading) {
     return <Typography>Loading...</Typography>;
   }
@@ -341,15 +357,19 @@ export default function Dashboard() {
                   labelId="group-select-label"
                   value={selectedGroup?.id ?? ""}
                   onChange={(e) => {
-                    const group = groups.find((g) => g.id === Number(e.target.value));
+                    const chosenValue = e.target.value;
+                    if (chosenValue === "") {
+                      setSelectedGroup(null);
+                      return;
+                    }
+                    const group = groups.find((g) => g.id === Number(chosenValue));
                     setSelectedGroup(group ?? null);
                   }}
                   label="Group"
-                  size="medium"
                   sx={{ background: "#fff", borderRadius: 1 }}
                 >
                   {groups.map((group: any) => (
-                    <MenuItem key={group.id} value={group.id}>
+                    <MenuItem key={group.id} value={String(group.id)}>
                       {group.name}
                     </MenuItem>
                   ))}
@@ -369,7 +389,7 @@ export default function Dashboard() {
               }}
             >
               <CardContent>
-                <Typography variant="h6" sx={{ fontSize: "1.1rem" }}>
+                <Typography variant="h6" sx={{ fontSize: "1.1rem", color: "#1976d2", mb: 1 }}>
                   Hosts Assigned to '{selectedGroup.name}'
                 </Typography>
                 <Typography variant="subtitle1" sx={{ mb: 1, fontSize: "0.95rem" }}>
