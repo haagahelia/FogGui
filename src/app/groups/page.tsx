@@ -34,6 +34,9 @@ export default function Groups() {
 
   const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true";
 
+  const disk1value = process.env.NEXT_PUBLIC_PRIMARY_DISK_VALUE_1; // disk names from env file
+  const disk2value = process.env.NEXT_PUBLIC_PRIMARY_DISK_VALUE_2;
+
   const router = useRouter();
 
   useEffect(() => {
@@ -368,8 +371,8 @@ export default function Groups() {
               onChange={(e) => setPrimaryDisk(e.target.value)}
               label="Select Primary Disk"
             >
-              <MenuItem value="1">Disk 1</MenuItem>
-              <MenuItem value="2">Disk 2</MenuItem>
+              <MenuItem value={disk1value}>Disk 1</MenuItem>
+              <MenuItem value={disk2value}>Disk 2</MenuItem>
             </Select>
           </FormControl>
   
