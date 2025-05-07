@@ -246,7 +246,7 @@ export default function Tasks() {
             if (!response.ok) throw new Error(result);
 
             alert(`Cancelled ${selectedTasksId.length} task(s).`);
-
+            window.location.reload();
         } catch (error: any) {
 
             alert("Failed to cancel tasks: " + error.message);
