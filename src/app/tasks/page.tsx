@@ -269,12 +269,11 @@ export default function Tasks() {
                     onRowSelectionModelChange={(ids) => setSelectedTasksId(ids as number[])
                     }
                     rows={filteredRows}
-                   //onClick={console.log(selectedTasksId)}
                     columns={columns}
                     initialState={{
                         pagination: { paginationModel: { pageSize: 15, page: 0 } },
                         sorting: {
-                            sortModel: [{ field: "createdTime", sort: "asc" }],
+                            sortModel: [{ field: "createdTime", sort: "desc" }], // Newest first
                         },
                     }}
                     pageSizeOptions={[5, 15, 20]}
