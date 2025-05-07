@@ -1,94 +1,219 @@
-# Login Application Configuration
+# Technical Documentation for FogGUI
 
-This document provides the necessary steps to configure and run the login application.
+## 1. Introduction
 
-## Setup Instructions
+### 1.1 Purpose
+The purpose of this project is to provide a user-friendly interface for managing FOG server tasks, such as deploying images, managing hosts, and creating multicast sessions. It simplifies interactions with the FOG API through a modern web application.
 
-### 1. Create the `.env.local` File
+### 1.2 Scope
+This application is designed for IT administrators and technicians who use FOG servers for imaging and managing devices. It provides features like group management, image deployment, and task monitoring.
 
-Create a file named `.env.local` and add the following content:
+### 1.3 Audience
+This documentation is intended for:
+- IT administrators setting up and maintaining the application.
+- Developers contributing to the project.
+- End-users interacting with the application for FOG server management.
 
-```ini
+## 2. System Overview
+
+### 2.1 Architecture
+The application is built using the following architecture:
+- **Frontend:** Next.js (React-based framework).
+- **Backend:** API routes in Next.js for server-side logic.
+- **Database:** SQLite for local data storage.
+- **FOG Server:** External service for managing imaging tasks.
+
+### 2.2 Technologies Used
+- **Node.js:** JavaScript runtime for server-side development.
+- **Next.js:** Framework for building React applications with server-side rendering.
+- **pnpm:** Fast and efficient package manager.
+- **Material-UI:** For building the user interface.
+- **FOG API:** For interacting with the FOG server.
+
+### 2.3 Dependencies
+Key dependencies include:
+- `next`
+- `react`
+- `@mui/material`
+- `@mui/x-data-grid`
+- `sqlite3`
+- `next-auth`
+
+## 3. Installation Guide
+
+### 3.1 Prerequisites
+- **Node.js:** Install the latest LTS version from [https://nodejs.org](https://nodejs.org).
+- **pnpm:** Install globally using:
+
+```bash
+npm install -g pnpm
+```
+
+### 3.2 System Requirements
+- **Operating System:** Windows, macOS, or Linux.
+- **Node.js version:** 16 or higher.
+- **Disk Space:** At least 1GB of free disk space.
+
+### 3.3 Installation Steps
+```bash
+# Clone the repository
+git clone <repository-url>
+
+# Navigate to the project directory
+cd foggui
+
+# Install dependencies
+pnpm install
+```
+
+- Create a `.env.local` file in the root directory and configure it (see Configuration Guide).
+
+## 4. Configuration Guide
+
+### 4.1 Configuration Parameters
+The `.env.local` file should include:
+```
 NEXTAUTH_SECRET=your-secret-here
-DATABASE_URL=file:./user.db
-NEXT_PUBLIC_FOG_API_BASE_URL=your-base-url-here
-NEXT_PUBLIC_FOG_API_USER_KEY=your-user-key-here
-NEXT_PUBLIC_FOG_API_TOKEN=your-api-key-here
+NEXT_PUBLIC_USE_DUMMY_DATA=false
+FOG_API_URL=https://your-fog-server/api
+FOG_API_USER_KEY=your-user-key
+FOG_API_TOKEN=your-api-token
 ```
 
-### 2. Generate a Secure Secret Key
+### 4.2 Environment Setup
+Generate a secure `NEXTAUTH_SECRET`:
+- **Windows (PowerShell):**
+  ```powershell
+  node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+  ```
+- **Mac/Linux:**
+  ```bash
+  openssl rand -hex 32
+  ```
 
-To generate a secure key for `NEXTAUTH_SECRET`, follow the steps for your operating system:
+Replace `your-secret-here` in `.env.local` with the generated key.
 
-#### **Windows (PowerShell) – No Installation Needed**
-1. Open **PowerShell**.
-2. Run the following command:
+### 4.3 External Services Integration
+Obtain FOG API credentials from the FOG Management Panel:
+- **Base URL:** Found in Settings or API Configuration.
+- **User Key:** Found in User Settings or API Access.
+- **API Token:** Found in Security or API Tokens.
 
-   ```powershell
-   [System.Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))
-   ```
+## 5. Usage Guide
 
-This will generate a 32-byte random string encoded in Base64.
+### 5.1 User Interface Overview
+The application includes the following pages:
+- **Dashboard:** Overview of tasks and hosts.
+- **Groups:** Manage groups and multicast sessions.
+- **Images:** View and manage images.
+- **Hosts:** Manage individual hosts.
 
-#### **Windows (PowerShell) – Using OpenSSL**
-If OpenSSL is already installed, you can use:
+### 5.2 User Authentication
+The application uses **NextAuth** for secure login. Ensure `NEXTAUTH_SECRET` is configured correctly.
 
-   ```powershell
-   openssl rand -base64 32
-   ```
+### 5.3 Core Functionality
+- **Group Management:** Create, update, and delete groups.
+- **Image Deployment:** Assign images to hosts and start deployment tasks.
+- **Task Monitoring:** View and manage active tasks.
 
-#### **Mac/Linux (Terminal)**
-1. Open **Terminal**.
-2. Run the following command:
+### 5.4 Advanced Features
+- **Multicast Sessions:** Start multicast deployments for groups.
+- **Dummy Data Mode:** Use dummy data for testing by setting:
+  ```env
+  NEXT_PUBLIC_USE_DUMMY_DATA=true
+  ```
 
-   ```sh
-   openssl rand -base64 32
-   ```
+### 5.5 Troubleshooting
+Common Issues:
+- **Missing `.env.local` file:** Ensure it exists and is correctly configured.
+- **API errors:** Verify FOG API credentials and server connectivity.
 
-#### **Add the Generated Key to `.env.local`**
-1. Copy the generated key.
-2. Open your `.env.local` file and replace `your-secret-here` with the copied key:
+## 6. API Documentation
 
-   ```ini
-   NEXTAUTH_SECRET=paste-your-generated-key-here
-   ```
+### 6.1 Endpoints
+- `GET /api/groups`: Fetch all groups.
+- `POST /api/groups`: Create a new group.
+- `PUT /api/groups`: Update group details.
+- `POST /api/images`: Assign an image to a host.
 
-This ensures secure authentication for your application.
+### 6.2 Request and Response Formats
+- **Request:** JSON format.
+- **Response:** JSON format with success or error messages.
 
-### 3. Retrieve FOG API Credentials
+### 6.3 Authentication and Authorization
+All API requests require:
+- `fog-api-token`
+- `fog-user-token`
 
-To obtain the necessary FOG API credentials, follow these steps:
+## 7. Database Schema
 
-#### Finding `NEXT_PUBLIC_FOG_API_BASE_URL`
-1. Log in to your FOG Management Panel.
-2. Navigate to **Settings** or **API Configuration**.
-3. Locate the **Base URL** for the API and copy it.
-4. Paste it into the `NEXT_PUBLIC_FOG_API_BASE_URL` field in your `.env.local` file.
+### 7.1 Entity-Relationship Diagram
+The database includes tables for users, tasks, and groups.
 
-#### Finding `NEXT_PUBLIC_FOG_API_USER_KEY`
-1. In the FOG Management Panel, go to **User Settings** or **API Access**.
-2. Find your **User API Key** (it may be labeled as `FOG_API_USER_KEY` or similar).
-3. Copy the key and paste it into the `NEXT_PUBLIC_FOG_API_USER_KEY` field in your `.env.local` file.
+### 7.2 Table Definitions
+- **Users:** Stores user credentials and session data.
+- **Tasks:** Tracks active and completed tasks.
+- **Groups:** Stores group information.
 
-#### Finding `NEXT_PUBLIC_FOG_API_TOKEN`
-1. In the FOG Management Panel, go to **Security** or **API Tokens**.
-2. Generate a new API Token if one does not already exist.
-3. Copy the token and paste it into the `NEXT_PUBLIC_FOG_API_TOKEN` field in your `.env.local` file.
+### 7.3 Relationships and Constraints
+- **Tasks** are linked to **groups** and **hosts**.
 
-### 4. Install Dependencies
+## 8. Testing
 
-Run the following command to install necessary dependencies:
+### 8.1 Test Plan
+- Test API endpoints using tools like Postman.
+- Verify UI functionality manually.
 
-```sh
-npm install
+### 8.2 Test Cases
+- Create a group and verify it appears in the list.
+- Start a multicast session and check the task status.
+
+### 8.3 Test Results
+- Document test results for future reference.
+
+## 9. Deployment
+
+### 9.1 Deployment Process
+```bash
+# Build the application
+pnpm build
+
+# Start the production server
+pnpm start
 ```
 
-### 5. Start the Application
+### 9.2 Release Notes
+- **v1.0.0:** Initial release with core features.
 
-Run the following command to start the application:
+### 9.3 Known Issues and Limitations
+- Dummy data mode is for testing only and should not be used in production.
 
-```sh
-npm run dev
+## 10. Support and Maintenance
+
+### 10.1 Troubleshooting Guide
+- **Issue:** Application not starting.  
+  **Solution:** Check `.env.local` configuration and ensure dependencies are installed.
+
+### 10.2 Frequently Asked Questions (FAQs)
+- **Q:** How do I reset my API credentials?  
+  **A:** Regenerate them in the FOG Management Panel.
+
+### 10.3 Contact Information
+For support, contact the project maintainer at:  
+📧 **support@example.com**
+
+## 11. Change Log
+
+### 11.1 Version History
+- **v1.0.0:** Initial release.
+
+### 11.2 Change Summary
+- Added group management and task monitoring features.
+
+## 12. Glossary
+
+### 12.1 Terms and Definitions
+- **FOG:** Free Open-Source Ghost, a computer imaging solution.
+- **Multicast:** Deploying an image to multiple devices simultaneously.
+- **NextAuth:** Authentication library for Next.js.
 ```
-
-The application should now be up and running.
