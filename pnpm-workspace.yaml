@@ -1,3 +1,6 @@
 onlyBuiltDependencies:
   - sharp
   - sqlite3
+
+packages:
+  - packages/*

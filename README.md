@@ -106,9 +106,11 @@ Obtain FOG API credentials from the FOG Management Panel:
 ### 5.1 User Interface Overview
 The application includes the following pages:
 - **Dashboard:** Overview of tasks and hosts.
+- **Hosts:** Manage individual hosts.
 - **Groups:** Manage groups and multicast sessions.
 - **Images:** View and manage images.
-- **Hosts:** Manage individual hosts.
+- **Tasks:** View and manage tasks.
+
 
 ### 5.2 User Authentication
 The application uses **NextAuth** for secure login. Ensure `NEXTAUTH_SECRET` is configured correctly.
@@ -117,13 +119,6 @@ The application uses **NextAuth** for secure login. Ensure `NEXTAUTH_SECRET` is 
 - **Group Management:** Create, update, and delete groups.
 - **Image Deployment:** Assign images to hosts and start deployment tasks.
 - **Task Monitoring:** View and manage active tasks.
-
-### 5.4 Advanced Features
-- **Multicast Sessions:** Start multicast deployments for groups.
-- **Dummy Data Mode:** Use dummy data for testing by setting:
-  ```env
-  NEXT_PUBLIC_USE_DUMMY_DATA=true
-  ```
 
 ### 5.5 Troubleshooting
 Common Issues:
@@ -147,35 +142,21 @@ All API requests require:
 - `fog-api-token`
 - `fog-user-token`
 
-## 7. Database Schema
+## 7. Testing
 
-### 7.1 Entity-Relationship Diagram
-The database includes tables for users, tasks, and groups.
-
-### 7.2 Table Definitions
-- **Users:** Stores user credentials and session data.
-- **Tasks:** Tracks active and completed tasks.
-- **Groups:** Stores group information.
-
-### 7.3 Relationships and Constraints
-- **Tasks** are linked to **groups** and **hosts**.
-
-## 8. Testing
-
-### 8.1 Test Plan
+### 7.1 Test Plan
 - Test API endpoints using tools like Postman.
 - Verify UI functionality manually.
 
-### 8.2 Test Cases
-- Create a group and verify it appears in the list.
+### 7.2 Test Cases
 - Start a multicast session and check the task status.
 
-### 8.3 Test Results
+### 7.3 Test Results
 - Document test results for future reference.
 
-## 9. Deployment
+## 8. Deployment
 
-### 9.1 Deployment Process
+### 8.1 Deployment Process
 ```bash
 # Build the application
 pnpm build
@@ -184,22 +165,19 @@ pnpm build
 pnpm start
 ```
 
-### 9.2 Known Issues and Limitations
-- Dummy data mode is for testing only and should not be used in production.
+## 9. Support and Maintenance
 
-## 10. Support and Maintenance
-
-### 10.1 Troubleshooting Guide
+### 9.1 Troubleshooting Guide
 - **Issue:** Application not starting.  
   **Solution:** Check `.env.local` configuration and ensure dependencies are installed.
 
-### 10.2 Frequently Asked Questions (FAQs)
+### 9.2 Frequently Asked Questions (FAQs)
 - **Q:** How do I reset my API credentials?  
   **A:** Regenerate them in the FOG Management Panel.
 
-## 11. Glossary
+## 10. Glossary
 
-### 11.1 Terms and Definitions
+### 10.1 Terms and Definitions
 - **FOG:** Free Open-Source Ghost, a computer imaging solution.
 - **Multicast:** Deploying an image to multiple devices simultaneously.
 - **NextAuth:** Authentication library for Next.js.
