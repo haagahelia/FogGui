@@ -29,6 +29,9 @@ export async function PUT(req: Request) {
       return new Response("Failed to update group primary disk", { status: 500 });
     }
 
+    // updating selectedGroups each hosts kernelDevice (Primary disk)
+    // commented out
+/*
     const results = await Promise.allSettled(
       hostIDs.map((hostId: number) => {
         return fetch(`${fogApiBase}/fog/host/${hostId}/edit`, {
@@ -61,7 +64,7 @@ export async function PUT(req: Request) {
         { status: 207 }
       );
     }
-
+*/
     return new Response(JSON.stringify({ success: true, message: "All hosts updated successfully" }), {
   status: 200,
   headers: { "Content-Type": "application/json" },

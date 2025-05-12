@@ -51,6 +51,9 @@ export async function PUT(req: Request) {
       return new Response("Failed to update group image", { status: 500 });
     }
 
+    // updating selectedGroups each hosts kernelDevice (Primary disk)
+    // commented out
+/*
     const results = await Promise.allSettled(
       hostIDs.map((hostId: number) => {
         console.log(`Sending PUT to host ${hostId}...`);
@@ -84,7 +87,7 @@ export async function PUT(req: Request) {
         { status: 207 }
       );
     }
-
+*/
     return new Response(JSON.stringify({ success: true, message: "All hosts updated successfully" }), {
   status: 200,
   headers: { "Content-Type": "application/json" },
@@ -100,6 +103,8 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
+    // Create empty group possibility commented out
+    
    /* if (body.action === "createGroup") {
       // Handle group creation
       const { name, description } = body;
