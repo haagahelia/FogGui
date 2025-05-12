@@ -1,47 +1,76 @@
 export async function PUT(req: Request) {
-    try {
-      const body = await req.json();
+  try {
+    const bodyText = await req.text(); 
 
-      const { groupID, kernelDevice } = body;
-      if (!groupID || !kernelDevice) {
-        return new Response(
-          JSON.stringify({ error: "Missing groupID or Primary Disk" }),
-          { status: 400 }
-        );
-      }
-  
-      // Call the API to update the group with the disk to be wiped
-      const response = await fetch(`${process.env.NEXT_PUBLIC_FOG_API_BASE_URL}/fog/group/${groupID}/edit`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "fog-api-token": process.env.NEXT_PUBLIC_FOG_API_TOKEN || "",
-          "fog-user-token": process.env.NEXT_PUBLIC_FOG_API_USER_KEY || "",
-        },
-        body: JSON.stringify({
-          kernelDevice: kernelDevice, // "Disk 1" or "Disk 2"
-        }),
-      });
-  
-      if (!response.ok) {
-        throw new Error("Failed to update group Primary Disk.");
-      }
-  
-      // Return a success message if the update is successful
-      const updatedGroup = await response.json();
+    const body = JSON.parse(bodyText);
+
+    const { hostIDs, kernelDevice, groupID } = body;
+    if (!Array.isArray(hostIDs) || hostIDs.length === 0 || !kernelDevice || !groupID ) {
       return new Response(
-        JSON.stringify({ success: true, data: updatedGroup }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      );
-    } catch (error: any) {
-      // Handle any errors that occur during the request
-      return new Response(
-        JSON.stringify({ error: error.message || "An unknown error occurred" }),
-        { status: 500 }
+        JSON.stringify({ error: "Missing host IDs, kernel device or groupID" }),
+        { status: 400 }
       );
     }
-  }
 
+    const fogApiBase = process.env.NEXT_PUBLIC_FOG_API_BASE_URL;
+    const headers = {
+      "Content-Type": "application/json",
+      "fog-api-token": process.env.NEXT_PUBLIC_FOG_API_TOKEN || "",
+      "fog-user-token": process.env.NEXT_PUBLIC_FOG_API_USER_KEY || "",
+    };
+
+    const groupRes = await fetch(`${fogApiBase}/fog/group/${groupID}/edit`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify({ kernelDevice }),
+    });
+
+    if (!groupRes.ok) {
+      return new Response("Failed to update group primary disk", { status: 500 });
+    }
+
+    const results = await Promise.allSettled(
+      hostIDs.map((hostId: number) => {
+        return fetch(`${fogApiBase}/fog/host/${hostId}/edit`, {
+          method: "PUT",
+          headers,
+          body: JSON.stringify({ kernelDevice }),
+        });
+      })
+    );
+    
+    results.forEach((result, index) => {
+      const hostId = hostIDs[index];
+      if (result.status === "fulfilled") {
+        console.log(`Host ${hostId} PUT status: ${result.value.status}`);
+        if (!result.value.ok) {
+          console.error(`Host ${hostId} response NOT OK`);
+        }
+      } else {
+        console.error(`Host ${hostId} request REJECTED:`, result.reason);
+      }
+    });
+    
+    const failed = results.filter(
+      r => r.status === "rejected" || (r.status === "fulfilled" && !r.value.ok)
+    );
+
+    if (failed.length > 0) {
+      return new Response(
+        `Some hosts failed to update kernelDevice (${failed.length}/${hostIDs.length})`,
+        { status: 207 }
+      );
+    }
+
+    return new Response(JSON.stringify({ success: true, message: "All hosts updated successfully" }), {
+  status: 200,
+  headers: { "Content-Type": "application/json" },
+});
+  } catch (error: any) {
+    console.error("Error during PUT:", error.message); // Log any errors
+    return new Response(error.message || "Internal server error", { status: 500 });
+  }
+}
 
 export async function POST(req: Request) {
     try {
