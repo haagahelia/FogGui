@@ -60,7 +60,7 @@ npm install -g pnpm
 git clone <repository-url>
 
 # Navigate to the project directory
-cd foggui
+cd FogGui
 
 # Install dependencies
 pnpm install
