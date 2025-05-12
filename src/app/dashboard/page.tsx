@@ -24,7 +24,7 @@ import HostModal from "@/components/HostModal";
 
 
 export default function Dashboard() {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [activeTasks, setActiveTasks] = useState<Task[]>([]);
   const [groupAssociations, setGroupAssociations] = useState<Groupassociation[]>([]);
   const [hosts, setHosts] = useState<Host[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -35,38 +35,37 @@ export default function Dashboard() {
   const [selectedPrimaryDisk, setSelectedPrimaryDisk] = useState<string | null>(null);
   const [openModal, setOpenModal] = useState(false);
   const [selectedHost, setSelectedHost] = useState<any>(null);
+  const [refreshTasks, setRefreshTasks] = useState(false);
 
   const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true";
 
-  const disk1value = process.env.NEXT_PUBLIC_PRIMARY_DISK_VALUE_1; // disk names from env file
+  const disk1value = process.env.NEXT_PUBLIC_PRIMARY_DISK_VALUE_1;
   const disk2value = process.env.NEXT_PUBLIC_PRIMARY_DISK_VALUE_2;
+
+
 
   useEffect(() => {
     const fetchData = async () => {
       try {
 
-        const taskEndpoint = useDummyData ? "/dummyTaskData.json" : "/api/tasks";
         const assocEndpoint = useDummyData ? "/dummyGroupAssociation.json" : "/api/groupassociations";
         const hostEndpoint = useDummyData ? "/dummyData.json" : "/api/hosts";
         const groupEndpoint = useDummyData ? "/dummyGroupData.json" : "/api/groups";
         const imageEndpoint = useDummyData ? "/dummyImageData.json" : "/api/images";
 
 
-        const [taskResponse, groupAssocResponse, hostResponse, groupResponse, imageResponse] = await Promise.all([
-          fetch(taskEndpoint),
+        const [groupAssocResponse, hostResponse, groupResponse, imageResponse] = await Promise.all([
           fetch(assocEndpoint),
           fetch(hostEndpoint),
           fetch(groupEndpoint),
           fetch(imageEndpoint),
         ]);
 
-        const taskData = await taskResponse.json();
         const groupAssocData = await groupAssocResponse.json();
         const hostData = await hostResponse.json();
         const groupData = await groupResponse.json();
         const imageData = await imageResponse.json();
 
-        setTasks(taskData.tasks || []);
         setGroupAssociations(groupAssocData.groupassociations || []);
         setHosts(hostData.hosts || []);
         setGroups(groupData.groups || []);
@@ -81,39 +80,52 @@ export default function Dashboard() {
     fetchData();
   }, []);
 
-  // Load selected group from local storage on component mount
+  // Second useEffect for fetching active tasks for selected group
   useEffect(() => {
-    const storedGroupID = localStorage.getItem("selectedGroup");
-    if (storedGroupID) {
-      const foundGroup = groups.find((g: any) => g.id === Number(storedGroupID));
-      if (foundGroup) setSelectedGroup(foundGroup);
-    }
-  }, [groups]);
+    if (!selectedGroup) return;
+  
+    let intervalId: NodeJS.Timeout | null = null;
+  
+    const fetchActiveTasks = async () => {
+      try {
+        const response = await fetch(`/api/active-tasks?groupId=${selectedGroup.id}`);
+        if (!response.ok) throw new Error("Failed to fetch tasks");
+        const data: Task[] = await response.json();
+        setActiveTasks(data);
+  
+        // Stop polling if no active tasks
+        if (data.length === 0 && intervalId) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+      } catch (error) {
+        console.error("Error fetching active tasks:", error);
+        setActiveTasks([]);
+      }
+    };
+  
+    // Initial fetch
+    fetchActiveTasks();
+  
+    // Start polling
+    intervalId = setInterval(fetchActiveTasks, 5000);
+  
+    // Cleanup
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [selectedGroup, refreshTasks]);
+  
 
-  // Save selected group to local storage whenever it changes
-  useEffect(() => {
-    if (selectedGroup) {
-      localStorage.setItem("selectedGroup", String(selectedGroup.id));
-    }
-  }, [selectedGroup]);
 
   if (loading) {
     return <Typography>Loading...</Typography>;
   }
 
-  // Filter tasks by group selected and with "Queued" or "In-progress" states
-  const excludedStateIds = [4, 5]; // Complete, Cancelled
-
-  // Get host IDs that are part of the selected group
-  const groupHostIds = groupAssociations
+    // Get host IDs that are part of the selected group
+    const groupHostIds = groupAssociations
     .filter((assoc: any) => assoc.groupID === selectedGroup?.id)
     .map((assoc: any) => assoc.hostID);
-
-  // Filter tasks that are active and belong to those hosts
-  const groupSpecificTasks = tasks.filter((task: any) =>
-    groupHostIds.includes(task.host?.id) &&
-    !excludedStateIds.includes(task.state?.id)
-  );
 
   // Map group associations to hosts
   const groupMap = groupAssociations.reduce((hostGroupMap: any, assoc: any) => {
@@ -123,47 +135,36 @@ export default function Dashboard() {
     hostGroupMap[assoc.hostID].push(assoc.groupID);
     return hostGroupMap;
   }, {});
+    
+ const startMulticast = () => {
+  if (!selectedGroup || !selectedImage || !selectedPrimaryDisk) {
+    console.error("Please select group, image and disk before starting multicast");
+    return;
+  }
 
-  // Group tasks by host and their associated groups
-  const groupedTasks = hosts
-    .filter((host: any) => groupMap[host.id])
-    .map((host: any) => ({
-      hostName: host.name,
-      groups: groupMap[host.id].map(
-        (groupID: number) =>
-          (groups.find((group: { id: number; name: string }) =>
-            group.id === groupID) as { id: number; name: string } | undefined)?.name ?? `Unknown group`
-      ),
-    }));
+  const confirmMulticast = window.confirm(
+    `Are you sure you want to start MULTICAST session for ${selectedGroup.name}?`
+  );
+  if (!confirmMulticast) return;
 
-  const startMulticast = () => {
+  if (activeTasks.length > 0) {
+    const confirm = window.confirm(
+      `⚠️ Warning: ${activeTasks.length} host(s) in this group already have active tasks. Do you want to continue?`
+    );
+    if (!confirm) return;
+  }
 
-    if (!selectedGroup || !selectedImage || !selectedPrimaryDisk) {
-      console.error("Please select group, image and disk before starting multicast");
-      return;
-    }
 
-    const confirmMulticast = window.confirm(`Are you sure you want to start MULTICAST session for ${selectedGroup.name}?`);
-    if (!confirmMulticast) return;
-
-    if (groupSpecificTasks.length > 0) {
-      const confirm = window.confirm(
-        `⚠️ Warning: ${groupSpecificTasks.length} host(s) in this group already have active tasks. Do you want to continue?`
-      );
-      if (!confirm) return;
-    }
-
-    fetch("/api/groups", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "updateGroup",
-        groupID: selectedGroup.id,
-        imageID: selectedImage.id,
-        kernelDevice: selectedPrimaryDisk,
-        hostIds: groupHostIds,
-      }),
-    })
+  fetch("/api/groups", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      groupID: selectedGroup.id,
+      imageID: selectedImage.id,
+      kernelDevice: selectedPrimaryDisk,
+      hostIDs: groupHostIds,
+    }),
+  })
     .then(async (updateResponse) => {
       const text = await updateResponse.text();
       let updateData;
@@ -201,11 +202,8 @@ export default function Dashboard() {
 
       console.log("Multicast started successfully:", multicastData);
       alert("🎉 Multicast started successfully!");
-
-      // Re-fetch tasks after successful multicast
-      const taskResponse = await fetch("/api/tasks");
-      const taskData = await taskResponse.json();
-      setTasks(taskData.tasks || []);
+      // 👇 This triggers a task refresh
+      setRefreshTasks(prev => !prev);
     })
     .catch((error: unknown) => {
       let message = "Unknown error";
@@ -216,6 +214,9 @@ export default function Dashboard() {
       alert(`❌ An unexpected error occurred: ${message}`);
     });
 };
+
+      
+
   const startUnicast = () => {
 
     if (!selectedGroup || !selectedImage || !selectedPrimaryDisk) {
@@ -226,9 +227,9 @@ export default function Dashboard() {
     const confirmUnicast = window.confirm(`Are you sure you want to start UNICAST for ${selectedGroup.name}?`);
     if (!confirmUnicast) return;
 
-    if (groupSpecificTasks.length > 0) {
+    if (activeTasks.length > 0) {
       const confirm = window.confirm(
-        `⚠️ Warning: ${groupSpecificTasks.length} host(s) in this group already have active tasks. Do you want to continue?`
+        `⚠️ Warning: ${activeTasks.length} host(s) in this group already have active tasks. Do you want to continue?`
       );
       if (!confirm) return;
     }
@@ -237,11 +238,10 @@ export default function Dashboard() {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        action: "updateGroup",
         groupID: selectedGroup.id,
         imageID: selectedImage.id,
         kernelDevice: selectedPrimaryDisk,
-        hostIDs: groupHostIds,
+        hostIDs: groupHostIds
       }),
     })
       .then(async (updateResponse) => {
@@ -263,10 +263,9 @@ export default function Dashboard() {
 
         console.log("unicast started successfully:", unicastData);
         alert("🎉 Unicast started successfully!");
+        // 👇 This triggers a task refresh
+      setRefreshTasks(prev => !prev);
 
-        const taskResponse = await fetch("/api/tasks");
-        const taskData = await taskResponse.json();
-        setTasks(taskData.tasks || []);
       })
       .catch((error) => {
         console.error("Error during deployment process:", error.message);
@@ -285,19 +284,16 @@ export default function Dashboard() {
     const confirmFastWipe = window.confirm(`Are you sure you want to start FAST WIPE for ${selectedGroup.name} in Disk ${selectedPrimaryDisk}?`);
     if (!confirmFastWipe) return;
 
-    if (groupSpecificTasks.length > 0) {
+    if (activeTasks.length > 0) {
       const confirm = window.confirm(
-        `⚠️ Warning: ${groupSpecificTasks.length} host(s) in this group have active tasks. Do you want to continue?`
+        `⚠️ Warning: ${activeTasks.length} host(s) in this group have active tasks. Do you want to continue?`
       );
       if (!confirm) return;
     }
 
     try {
-      console.log("Starting Fast Wipe for", {
-        groupID: selectedGroup?.id,
-        disk: selectedPrimaryDisk,
-      });
-      // Step 1: Set the kernel device (== primary disk)
+
+      // Step 1: Set the kernel device for group and hosts (== primary disk)
       const updateResponse = await fetch("/api/groups/prepareFastWipe", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -327,13 +323,12 @@ export default function Dashboard() {
         throw new Error(startData.error || "Failed to start Fast Wipe task.");
       }
 
-      // Success
+      // After success
       console.log("Fast Wipe started successfully:", startData);
       alert("🎉 Fast Wipe started successfully!");
+      // 👇 This triggers a task refresh
+      setRefreshTasks(prev => !prev);
 
-      const taskResponse = await fetch("/api/tasks");
-      const taskData = await taskResponse.json();
-      setTasks(taskData.tasks || []);
     } catch (error: any) {
       console.error("Fast Wipe error:", error.message || error);
       alert(`❌ Fast Wipe failed: ${error.message || "Unknown error"}`);
@@ -380,19 +375,15 @@ export default function Dashboard() {
                   labelId="group-select-label"
                   value={selectedGroup?.id ?? ""}
                   onChange={(e) => {
-                    const chosenValue = e.target.value;
-                    if (chosenValue === "") {
-                      setSelectedGroup(null);
-                      return;
-                    }
-                    const group = groups.find((g) => g.id === Number(chosenValue));
+                    const group = groups.find((g) => g.id === Number(e.target.value));
                     setSelectedGroup(group ?? null);
                   }}
                   label="Group"
+                  size="medium"
                   sx={{ background: "#fff", borderRadius: 1 }}
                 >
                   {groups.map((group: any) => (
-                    <MenuItem key={group.id} value={String(group.id)}>
+                    <MenuItem key={group.id} value={group.id}>
                       {group.name}
                     </MenuItem>
                   ))}
@@ -412,7 +403,7 @@ export default function Dashboard() {
               }}
             >
               <CardContent>
-                <Typography variant="h6" sx={{ fontSize: "1.1rem", color: "#1976d2", mb: 1 }}>
+                <Typography variant="h6" sx={{ fontSize: "1.1rem" }}>
                   Hosts Assigned to '{selectedGroup.name}'
                 </Typography>
                 <Typography variant="subtitle1" sx={{ mb: 1, fontSize: "0.95rem" }}>
@@ -543,8 +534,8 @@ export default function Dashboard() {
                 <Divider sx={{ my: 1 }} />
 
                 <Box sx={{ maxHeight: 360, overflowY: "auto" }}>
-                  {groupSpecificTasks.length > 0 ? (
-                    groupSpecificTasks.map((task: any) => (
+                  {activeTasks.length > 0 ? (
+                    activeTasks.map((task: any) => (
                       <Box key={task.id} mb={2}>
                         <Box
                           display="flex"
@@ -583,20 +574,24 @@ export default function Dashboard() {
                           />
                         </Box>
 
-                        {/* Progress Bar */}
-                        <Box width="100%" height={6} bgcolor="#e0e0e0" borderRadius={4}>
-                          <Box
-                            height="100%"
-                            borderRadius={4}
-                            bgcolor="#1976d2"
-                            width={`${task.percent ?? 0}%`}
-                            sx={{ transition: "width 0.5s ease-in-out" }}
-                          />
-                        </Box>
+                        {task.stateID === 3 && (
+                        <>
+                          {/* Progress Bar */}
+                          <Box width="100%" height={6} bgcolor="#e0e0e0" borderRadius={4}>
+                            <Box
+                              height="100%"
+                              borderRadius={4}
+                              bgcolor="#1976d2"
+                              width={`${task.percent ?? 0}%`}
+                              sx={{ transition: "width 0.5s ease-in-out" }}
+                            />
+                          </Box>
 
-                        <Typography fontSize="0.7rem" textAlign="right" color="text.secondary">
-                          {task.percent ?? 0}%
-                        </Typography>
+                          <Typography fontSize="0.7rem" textAlign="right" color="text.secondary">
+                            {task.percent ?? 0}%
+                          </Typography>
+                        </>
+                      )}
                       </Box>
                     ))
                   ) : (
