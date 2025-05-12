@@ -1,13 +1,6 @@
 "use client";
 import React, { useEffect, useState, useMemo } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   Typography,
   Box,
   Button,
@@ -21,85 +14,70 @@ import {
 // import CreateGroupDialog from "@/components/CreateGroupDialog"; // Import the new component
 import { useRouter } from "next/navigation";
 import { DataGrid, GridColDef, GridToolbar } from "@mui/x-data-grid";
+import { Group } from "@/types/group";
+import { Image } from "@/types/image";
+import { Groupassociation } from "@/types/groupassociation";
 
 export default function Groups() {
-  const [data, setData] = useState<any>({ groups: [] });
-  const [selectedGroup, setSelectedGroup] = useState<any | null>(null);
+  const [data, setData] = useState<Group[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [primaryDisk, setPrimaryDisk] = useState<string | null>(null);
  // const [dialogOpen, setDialogOpen] = useState(false);
-  const [imageData, setImageData] = useState<any>({ images: [] });
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imageData, setImageData] = useState<Image[]>([]);
+  const [selectedImage, setSelectedImage] = useState<Image | null>(null);
+  const [groupAssociations, setGroupAssociations] = useState<Groupassociation[]>([]);
   const [filters, setFilters] = useState<Record<string, string>>({});
 
   const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true";
 
-  const disk1value = process.env.NEXT_PUBLIC_PRIMARY_DISK_VALUE_1; // disk names from env file
+  const disk1value = process.env.NEXT_PUBLIC_PRIMARY_DISK_VALUE_1;
   const disk2value = process.env.NEXT_PUBLIC_PRIMARY_DISK_VALUE_2;
 
   const router = useRouter();
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const endpoint = useDummyData ? "/dummyGroupData.json" : "/api/groups";
-        const response = await fetch(endpoint);
-  
-        if (!response.ok) {
-          throw new Error(`Failed to fetch data: ${response.statusText}`);
-        }
-  
-        const jsonData = await response.json();
-  
-        if (!jsonData.groups || !Array.isArray(jsonData.groups)) {
-          console.error("Groups data is missing:", jsonData);
-          return;
-        }
-  
-        jsonData.groups = jsonData.groups.map((group: any) => {
-          const date = new Date(group.createdTime);
-          const formattedDate = `${String(date.getDate()).padStart(2, "0")}-${String(
-            date.getMonth() + 1
-          ).padStart(2, "0")}-${date.getFullYear()}`;
-          return { ...group, createdTime: formattedDate };
-        });
-  
-        setData(jsonData);
-      } catch (error) {
-        console.error("Error fetching groups:", error);
-        alert("Failed to load groups.");
-      }
-    };
-  
-    fetchData();
-  }, []);
+  const fetchData = async () => {
+    try {
+      const assocEndpoint = useDummyData ? "/dummyGroupAssociation.json" : "/api/groupassociations";
+      const groupEndpoint = useDummyData ? "/dummyGroupData.json" : "/api/groups";
+      const imageEndpoint = useDummyData ? "/dummyImageData.json" : "/api/images";
 
-  useEffect(() => {
-    const fetchImageData = async () => {
-      try {
-        const endpoint = useDummyData ? "/dummyImageData.json" : "/api/images";
-        const response = await fetch(endpoint);
-  
-        if (!response.ok) {
-          throw new Error(`Failed to fetch images: ${response.statusText}`);
-        }
-  
-        const jsonData = await response.json();
-  
-        if (!jsonData.images || !Array.isArray(jsonData.images)) {
-          console.error("Image data is not in expected format:", jsonData);
-          return;
-        }
-  
-        setImageData(jsonData);
-      } catch (error) {
-        console.error("Error fetching images:", error);
-        alert("Failed to load images.");
+      const [groupAssocResponse, groupResponse, imageResponse] = await Promise.all([
+        fetch(assocEndpoint),
+        fetch(groupEndpoint),
+        fetch(imageEndpoint),
+      ]);
+
+      if (!groupAssocResponse.ok || !groupResponse.ok || !imageResponse.ok) {
+        throw new Error("One or more fetches failed");
       }
-    };
-  
-    fetchImageData();
-  }, []);
+
+      const groupAssocData = await groupAssocResponse.json();
+      const groupData = await groupResponse.json();
+      const imageData = await imageResponse.json();
+
+      // Optional: Format dates
+      const formattedGroups = (groupData.groups || []).map((group: Group) => {
+        if (!group.createdTime) return group;
+        const date = new Date(group.createdTime);
+        const formattedDate = `${String(date.getDate()).padStart(2, "0")}-${String(
+          date.getMonth() + 1
+        ).padStart(2, "0")}-${date.getFullYear()}`;
+        return { ...group, createdTime: formattedDate };
+      });
+
+      setGroupAssociations(groupAssocData.groupassociations || []);
+      setData(formattedGroups);
+      setImageData(imageData.images || []);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      alert("Failed to load data.");
+  };
+  }
+  fetchData();
+}, []);
+
 
   /* const handleCreateGroup = async (name: string, description: string) => {
     try {
@@ -140,6 +118,12 @@ export default function Groups() {
     setIsModalOpen(false);
   };
 
+
+     // Get host IDs that are part of the selected group
+    const groupHostIds = groupAssociations
+    .filter((assoc: any) => assoc.groupID === selectedGroup?.id)
+    .map((assoc: any) => assoc.hostID);
+
   const startMulticast = () => {
     if (!selectedGroup || !selectedGroup.id) {
       console.error("No group selected or missing ID.");
@@ -160,8 +144,9 @@ export default function Groups() {
       body: JSON.stringify({
         action: "updateGroup",
         groupID: selectedGroup.id,
-        imageID: selectedImage,
+        imageID: selectedImage.id,
         kernelDevice: primaryDisk,
+        hostIDs: groupHostIds,
       }),
     })
       .then(async (updateResponse) => {
@@ -196,14 +181,14 @@ export default function Groups() {
 
   // Create rows for DataGrid from groups data
   const rows = useMemo(() => {
-    return data.groups?.map((group: any) => ({
-      id: group.id,
-      name: group.name,
-      hostcount: group.hostcount,
-      createdBy: group.createdBy,
-      createdTime: group.createdTime,
-    })) || [];
-  }, [data]);
+  return (data || []).map((group: Group) => ({
+    id: group.id,
+    name: group.name,
+    hostcount: group.hostcount ?? 0,
+    createdBy: group.createdBy ?? "Unknown",
+    createdTime: group.createdTime ?? "-",
+  }));
+}, [data]);
   
   const filteredRows = useMemo(() => {
     return rows.filter((row: { [key: string]: any }) =>
@@ -302,7 +287,7 @@ export default function Groups() {
       sx={{ border: "3px solid #ccc", padding: 5, borderRadius: 2 }}
     >
       <h1>Groups</h1>
-      {data.groups?.length > 0 ? (
+      {data?.length > 0 ? (
         // Using DataGrid for sorting and filtering
         <Box sx={{ height: 600, width: "100%" }}>
           <DataGrid
@@ -349,17 +334,20 @@ export default function Groups() {
           <FormControl fullWidth sx={{ marginTop: 3 }}>
             <InputLabel id="image-select-label">Select Image</InputLabel>
             <Select
-              labelId="image-select-label"
-              value={selectedImage || ""}
-              onChange={(e) => setSelectedImage(e.target.value)}
-              label="Choose Image"
-            >
-              {imageData.images.map((image: any) => (
-                <MenuItem key={image.id} value={image.id}>
-                  {image.name}
-                </MenuItem>
-              ))}
-            </Select>
+                labelId="image-select-label"
+                value={selectedImage?.id || ""}
+                onChange={(e) => {
+                  const selected = imageData.find(img => img.id === Number(e.target.value));
+                  setSelectedImage(selected || null);
+                }}
+                label="Choose Image"
+              >
+                {imageData.map((image: Image) => (
+                  <MenuItem key={image.id} value={image.id}>
+                    {image.name}
+                  </MenuItem>
+                ))}
+              </Select>
           </FormControl>
   
           {/* Dropdown for selecting primary disk */}

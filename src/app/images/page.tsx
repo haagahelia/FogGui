@@ -15,6 +15,7 @@ import {
     TextField
 } from "@mui/material";
 import { DataGrid, GridColDef, GridToolbar } from "@mui/x-data-grid";
+import { useRouter } from "next/navigation";
 
 export default function Images() {
 
@@ -26,6 +27,8 @@ export default function Images() {
     const [filters, setFilters] = useState<Record<string, string>>({});
 
     const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true"; // Check if we should use dummy data
+  
+    const router = useRouter();
   
     useEffect(() => {
       const fetchHostData = async () => {
@@ -139,7 +142,9 @@ export default function Images() {
                 throw new Error(result.message || "Deployment failed");
             }
     
-            alert("Deployment started successfully.");
+          alert("Deployment started successfully.");
+          // Redirect
+          router.push("/dashboard");
             
         } catch (error) {
             console.error(error);
