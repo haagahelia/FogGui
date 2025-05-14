@@ -144,19 +144,6 @@ export default function Hosts() {
         />
       ),
     },
-    {
-      field: "status",
-      headerName: "Status",
-      flex: 1,
-      sortable: true,
-      renderHeader: () => (
-        <FilterHeader
-          label="Status"
-          value={filters.status || ""}
-          onChange={(val) => handleFilterChange("status", val)}
-        />
-      ),
-    },
   ];
 
   return (
