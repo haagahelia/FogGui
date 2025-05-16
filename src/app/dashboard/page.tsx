@@ -22,115 +22,25 @@ import { Groupassociation } from "@/types/groupassociation";
 
 import HostModal from "@/components/HostModal";
 
+import { useDashboardData } from "./hooks/useDashboardData";
+import { useSelectedGroupPersistence } from "./hooks/useSelectedGroupPersistence";
+import { useActiveTasks } from "./hooks/useActiveTasks";
 
 export default function Dashboard() {
-  const [activeTasks, setActiveTasks] = useState<Task[]>([]);
-  const [groupAssociations, setGroupAssociations] = useState<Groupassociation[]>([]);
-  const [hosts, setHosts] = useState<Host[]>([]);
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [images, setImages] = useState<Image[]>([]);
-  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
-  const [selectedImage, setSelectedImage] = useState<Image | null>(null);
-  const [selectedPrimaryDisk, setSelectedPrimaryDisk] = useState<string | null>(null);
-  const [openModal, setOpenModal] = useState(false);
-  const [selectedHost, setSelectedHost] = useState<any>(null);
-  const [refreshTasks, setRefreshTasks] = useState(false);
-
   const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true";
-
   const disk1value = process.env.NEXT_PUBLIC_PRIMARY_DISK_VALUE_1;
   const disk2value = process.env.NEXT_PUBLIC_PRIMARY_DISK_VALUE_2;
 
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [selectedImage, setSelectedImage] = useState<Image | null>(null);
+  const [selectedPrimaryDisk, setSelectedPrimaryDisk] = useState<string | null>(null);
+  const [refreshTasks, setRefreshTasks] = useState(false);
+  const [openModal, setOpenModal] = useState(false);
+  const [selectedHost, setSelectedHost] = useState<any>(null);
 
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-
-        const assocEndpoint = useDummyData ? "/dummyGroupAssociation.json" : "/api/groupassociations";
-        const hostEndpoint = useDummyData ? "/dummyData.json" : "/api/hosts";
-        const groupEndpoint = useDummyData ? "/dummyGroupData.json" : "/api/groups";
-        const imageEndpoint = useDummyData ? "/dummyImageData.json" : "/api/images";
-
-
-        const [groupAssocResponse, hostResponse, groupResponse, imageResponse] = await Promise.all([
-          fetch(assocEndpoint),
-          fetch(hostEndpoint),
-          fetch(groupEndpoint),
-          fetch(imageEndpoint),
-        ]);
-
-        const groupAssocData = await groupAssocResponse.json();
-        const hostData = await hostResponse.json();
-        const groupData = await groupResponse.json();
-        const imageData = await imageResponse.json();
-
-        setGroupAssociations(groupAssocData.groupassociations || []);
-        setHosts(hostData.hosts || []);
-        setGroups(groupData.groups || []);
-        setImages(imageData.images || []);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  // Second useEffect for fetching active tasks for selected group
-  useEffect(() => {
-    if (!selectedGroup) return;
-  
-    let intervalId: NodeJS.Timeout | null = null;
-  
-    const fetchActiveTasks = async () => {
-      try {
-        const response = await fetch(`/api/active-tasks?groupId=${selectedGroup.id}`);
-        if (!response.ok) throw new Error("Failed to fetch tasks");
-        const data: Task[] = await response.json();
-        setActiveTasks(data);
-  
-        // Stop polling if no active tasks
-        if (data.length === 0 && intervalId) {
-          clearInterval(intervalId);
-          intervalId = null;
-        }
-      } catch (error) {
-        console.error("Error fetching active tasks:", error);
-        setActiveTasks([]);
-      }
-    };
-  
-    // Initial fetch
-    fetchActiveTasks();
-  
-    // Start polling
-    intervalId = setInterval(fetchActiveTasks, 5000);
-  
-    // Cleanup
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [selectedGroup, refreshTasks]);
-  
-  // Load selected group from local storage on component mount
-  useEffect(() => {
-    const storedGroupID = localStorage.getItem("selectedGroup");
-    if (storedGroupID) {
-      const foundGroup = groups.find((g: any) => g.id === Number(storedGroupID));
-      if (foundGroup) setSelectedGroup(foundGroup);
-    }
-  }, [groups]);
-
-  // Save selected group to local storage whenever it changes
-  useEffect(() => {
-    if (selectedGroup) {
-      localStorage.setItem("selectedGroup", String(selectedGroup.id));
-    }
-  }, [selectedGroup]);
+  const { groupAssociations, hosts, groups, images, loading } = useDashboardData(useDummyData);
+  const activeTasks = useActiveTasks(selectedGroup, refreshTasks);
+  useSelectedGroupPersistence(groups, selectedGroup, setSelectedGroup);
 
 
   if (loading) {
