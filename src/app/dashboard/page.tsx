@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -39,18 +39,20 @@ export default function Dashboard() {
   const [selectedHost, setSelectedHost] = useState<any>(null);
 
   const { groupAssociations, hosts, groups, images, loading } = useDashboardData(useDummyData);
-  const activeTasks = useActiveTasks(selectedGroup, refreshTasks);
   useSelectedGroupPersistence(groups, selectedGroup, setSelectedGroup);
 
+  // Get host IDs that are part of the selected group
+  const groupHostIds = useMemo(() =>
+    selectedGroup
+      ? groupAssociations.filter(a => a.groupID === selectedGroup.id).map(a => a.hostID)
+      : [],
+    [selectedGroup, groupAssociations]);
+
+  const activeTasks = useActiveTasks(groupHostIds, refreshTasks);
 
   if (loading) {
     return <Typography>Loading...</Typography>;
   }
-
-    // Get host IDs that are part of the selected group
-    const groupHostIds = groupAssociations
-    .filter((assoc: any) => assoc.groupID === selectedGroup?.id)
-    .map((assoc: any) => assoc.hostID);
 
   // Map group associations to hosts
   const groupMap = groupAssociations.reduce((hostGroupMap: any, assoc: any) => {
@@ -60,87 +62,87 @@ export default function Dashboard() {
     hostGroupMap[assoc.hostID].push(assoc.groupID);
     return hostGroupMap;
   }, {});
-    
- const startMulticast = () => {
-  if (!selectedGroup || !selectedImage || !selectedPrimaryDisk) {
-    console.error("Please select group, image and disk before starting multicast");
-    return;
-  }
 
-  const confirmMulticast = window.confirm(
-    `Are you sure you want to start MULTICAST session for ${selectedGroup.name}?`
-  );
-  if (!confirmMulticast) return;
+  const startMulticast = () => {
+    if (!selectedGroup || !selectedImage || !selectedPrimaryDisk) {
+      console.error("Please select group, image and disk before starting multicast");
+      return;
+    }
 
-  if (activeTasks.length > 0) {
-    const confirm = window.confirm(
-      `⚠️ Warning: ${activeTasks.length} host(s) in this group already have active tasks. Do you want to continue?`
+    const confirmMulticast = window.confirm(
+      `Are you sure you want to start MULTICAST session for ${selectedGroup.name}?`
     );
-    if (!confirm) return;
-  }
+    if (!confirmMulticast) return;
+
+    if (activeTasks.length > 0) {
+      const confirm = window.confirm(
+        `⚠️ Warning: ${activeTasks.length} host(s) in this group already have active tasks. Do you want to continue?`
+      );
+      if (!confirm) return;
+    }
 
 
-  fetch("/api/groups", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      groupID: selectedGroup.id,
-      imageID: selectedImage.id,
-      kernelDevice: selectedPrimaryDisk,
-      hostIDs: groupHostIds,
-    }),
-  })
-    .then(async (updateResponse) => {
-      const text = await updateResponse.text();
-      let updateData;
-      try {
-        updateData = JSON.parse(text);
-      } catch {
-        throw new Error(`Update group failed with non-JSON response: ${text}`);
-      }
+    fetch("/api/groups", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        groupID: selectedGroup.id,
+        imageID: selectedImage.id,
+        kernelDevice: selectedPrimaryDisk,
+        hostIDs: groupHostIds,
+      }),
+    })
+      .then(async (updateResponse) => {
+        const text = await updateResponse.text();
+        let updateData;
+        try {
+          updateData = JSON.parse(text);
+        } catch {
+          throw new Error(`Update group failed with non-JSON response: ${text}`);
+        }
 
-      if (!updateResponse.ok)
-        throw new Error(updateData.error || "Failed to update group");
+        if (!updateResponse.ok)
+          throw new Error(updateData.error || "Failed to update group");
 
-      return fetch("/api/groups", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "startMulticast",
-          groupID: selectedGroup.id,
-          taskTypeID: "8",
-          name: `Multicast for ${selectedGroup.name}`,
-        }),
+        return fetch("/api/groups", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "startMulticast",
+            groupID: selectedGroup.id,
+            taskTypeID: "8",
+            name: `Multicast for ${selectedGroup.name}`,
+          }),
+        });
+      })
+      .then(async (multicastResponse) => {
+        const text = await multicastResponse.text();
+        let multicastData;
+        try {
+          multicastData = JSON.parse(text);
+        } catch {
+          throw new Error(`Multicast start failed with non-JSON response: ${text}`);
+        }
+
+        if (!multicastResponse.ok)
+          throw new Error(multicastData.error || "Failed to start multicast");
+
+        console.log("Multicast started successfully:", multicastData);
+        alert("🎉 Multicast started successfully!");
+        // 👇 This triggers a task refresh
+        setRefreshTasks(prev => !prev);
+      })
+      .catch((error: unknown) => {
+        let message = "Unknown error";
+        if (error instanceof Error) message = error.message;
+        else if (typeof error === "string") message = error;
+
+        console.error("Error during multicast process:", message);
+        alert(`❌ An unexpected error occurred: ${message}`);
       });
-    })
-    .then(async (multicastResponse) => {
-      const text = await multicastResponse.text();
-      let multicastData;
-      try {
-        multicastData = JSON.parse(text);
-      } catch {
-        throw new Error(`Multicast start failed with non-JSON response: ${text}`);
-      }
+  };
 
-      if (!multicastResponse.ok)
-        throw new Error(multicastData.error || "Failed to start multicast");
 
-      console.log("Multicast started successfully:", multicastData);
-      alert("🎉 Multicast started successfully!");
-      // 👇 This triggers a task refresh
-      setRefreshTasks(prev => !prev);
-    })
-    .catch((error: unknown) => {
-      let message = "Unknown error";
-      if (error instanceof Error) message = error.message;
-      else if (typeof error === "string") message = error;
-
-      console.error("Error during multicast process:", message);
-      alert(`❌ An unexpected error occurred: ${message}`);
-    });
-};
-
-      
 
   const startUnicast = () => {
 
@@ -189,7 +191,7 @@ export default function Dashboard() {
         console.log("unicast started successfully:", unicastData);
         alert("🎉 Unicast started successfully!");
         // 👇 This triggers a task refresh
-      setRefreshTasks(prev => !prev);
+        setRefreshTasks(prev => !prev);
 
       })
       .catch((error) => {
@@ -420,8 +422,8 @@ export default function Dashboard() {
                     onChange={(e) => setSelectedPrimaryDisk(e.target.value)}
                     label="Select Primary Disk"
                   >
-                    <MenuItem value={disk1value}>Disk 1</MenuItem>
-                    <MenuItem value={disk2value}>Disk 2</MenuItem>
+                    <MenuItem value={disk1value}>Disk 1 {disk1value} </MenuItem>
+                    <MenuItem value={disk2value}>Disk 2 {disk2value} </MenuItem>
                   </Select>
                 </FormControl>
 
@@ -505,23 +507,23 @@ export default function Dashboard() {
                         </Box>
 
                         {task.stateID === 3 && (
-                        <>
-                          {/* Progress Bar */}
-                          <Box width="100%" height={6} bgcolor="#e0e0e0" borderRadius={4}>
-                            <Box
-                              height="100%"
-                              borderRadius={4}
-                              bgcolor="#1976d2"
-                              width={`${task.percent ?? 0}%`}
-                              sx={{ transition: "width 0.5s ease-in-out" }}
-                            />
-                          </Box>
+                          <>
+                            {/* Progress Bar */}
+                            <Box width="100%" height={6} bgcolor="#e0e0e0" borderRadius={4}>
+                              <Box
+                                height="100%"
+                                borderRadius={4}
+                                bgcolor="#1976d2"
+                                width={`${task.percent ?? 0}%`}
+                                sx={{ transition: "width 0.5s ease-in-out" }}
+                              />
+                            </Box>
 
-                          <Typography fontSize="0.7rem" textAlign="right" color="text.secondary">
-                            {task.percent ?? 0}%
-                          </Typography>
-                        </>
-                      )}
+                            <Typography fontSize="0.7rem" textAlign="right" color="text.secondary">
+                              {task.percent ?? 0}%
+                            </Typography>
+                          </>
+                        )}
                       </Box>
                     ))
                   ) : (

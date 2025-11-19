@@ -15,10 +15,8 @@ import {
 interface Host {
     id: number;
     name: string;
-    image: {
-        name: string;
-    };
-    macs: string;
+    imagename: string;
+    primac: string;
     description: string;
 }
 
@@ -59,14 +57,14 @@ const HostModal: React.FC<HostModalProps> = ({ open, onClose, hosts }) => {
                 const groupJson = await groupResponse.json();
                 const groupAssocJson = await groupAssocResponse.json();
 
-                setGroups(groupJson.groups);
-                setGroupAssociations(groupAssocJson.groupassociations);
+                setGroups(groupJson.data);
+                setGroupAssociations(groupAssocJson.data);
 
                 if (hosts.length > 0) {
-                    const associatedGroups = groupAssocJson.groupassociations
+                    const associatedGroups = groupAssocJson.data
                         .filter((assoc: GroupAssociation) => assoc.hostID === hosts[0].id)
                         .map((assoc: GroupAssociation) => {
-                            const group = groupJson.groups.find((g: Group) => g.id === assoc.groupID);
+                            const group = groupJson.data.find((g: Group) => g.id === assoc.groupID);
                             return group ? group.name : "Unknown Group";
                         });
 
@@ -119,11 +117,11 @@ const HostModal: React.FC<HostModalProps> = ({ open, onClose, hosts }) => {
                                     </TableRow>
                                     <TableRow>
                                         <TableCell><strong>Image</strong></TableCell>
-                                        <TableCell>{host.image.name}</TableCell>
+                                        <TableCell>{host.imagename}</TableCell>
                                     </TableRow>
                                     <TableRow>
                                         <TableCell><strong>MAC</strong></TableCell>
-                                        <TableCell>{host.macs}</TableCell>
+                                        <TableCell>{host.primac}</TableCell>
                                     </TableRow>
                                     <TableRow>
                                         <TableCell><strong>Description</strong></TableCell>

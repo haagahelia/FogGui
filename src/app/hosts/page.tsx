@@ -32,12 +32,13 @@ export default function Hosts() {
         const jsonData = await response.json();
 
         // Ensure the response contains a valid 'hosts' array before setting state
-        if (!jsonData.hosts || !Array.isArray(jsonData.hosts)) {
+        if (!jsonData.data || !Array.isArray(jsonData.data)) {
           console.error("Host data is not in expected format:", jsonData);
           return;
         }
 
-        setData({ hosts: jsonData.hosts });
+        setData({ hosts: jsonData.data });
+        console.log(jsonData.data);
       } catch (error) {
         console.error("Error fetching hosts:", error);
         alert("Failed to load hosts.");
@@ -61,8 +62,8 @@ export default function Hosts() {
     return data.hosts?.map((host: any) => ({
       id: host.id,
       name: host.name,
-      macAddress: host.macs ? host.macs[0] : "",
-      image: host.image?.name || "",
+      macAddress: host.primac ||  "",
+      image: host.imagename || "",
       status: host.pingstatuscode,
       original: host, // include the full host data for the modal
     })) || [];

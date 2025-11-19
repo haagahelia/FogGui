@@ -33,10 +33,12 @@ export function useDashboardData(useDummyData: boolean) {
           imageRes.json(),
         ]);
 
-        setGroupAssociations(assocData.groupassociations || []);
-        setHosts(hostData.hosts || []);
-        setGroups(groupData.groups || []);
-        setImages(imageData.images || []);
+        console.log(assocData, hostData, groupData, imageData);
+
+        setGroupAssociations(assocData.data || []);
+        setHosts(hostData.data || []);
+        setGroups(groupData.data || []);
+        setImages(imageData.data || []);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       } finally {

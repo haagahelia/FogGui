@@ -1,16 +1,21 @@
 import { useEffect, useState } from "react";
 import { Task } from "@/types/task";
 
-export function useActiveTasks(selectedGroup: { id: number } | null, refreshTrigger: boolean) {
+export function useActiveTasks(groupHostIds : number[], refreshTrigger: boolean) {
   const [activeTasks, setActiveTasks] = useState<Task[]>([]);
 
   useEffect(() => {
-    if (!selectedGroup) return;
+    if (!groupHostIds.length) {
+      setActiveTasks([]);
+      return;
+    }
+  
     let intervalId: NodeJS.Timeout | null = null;
 
     const fetchTasks = async () => {
       try {
-        const res = await fetch(`/api/active-tasks?groupId=${selectedGroup.id}`);
+        const hostIdsParam = groupHostIds.join(",");
+        const res = await fetch(`/api/tasks/active?hostIdsParam=${hostIdsParam}`);
         const data: Task[] = await res.json();
         setActiveTasks(data);
 
@@ -29,7 +34,7 @@ export function useActiveTasks(selectedGroup: { id: number } | null, refreshTrig
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [selectedGroup, refreshTrigger]);
+  }, [groupHostIds, refreshTrigger]);
 
   return activeTasks;
 }
