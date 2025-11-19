@@ -63,8 +63,8 @@ export default function Dashboard() {
     return hostGroupMap;
   }, {});
 
-  const startMulticast = () => {
-    if (!selectedGroup || !selectedImage || !selectedPrimaryDisk) {
+  const startMulticast = async () => {
+    if (!selectedGroup || !selectedImage || !selectedPrimaryDisk || !groupHostIds?.length) {
       console.error("Please select group, image and disk before starting multicast");
       return;
     }
@@ -81,65 +81,88 @@ export default function Dashboard() {
       if (!confirm) return;
     }
 
+    try {
 
-    fetch("/api/groups", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        groupID: selectedGroup.id,
-        imageID: selectedImage.id,
-        kernelDevice: selectedPrimaryDisk,
-        hostIDs: groupHostIds,
-      }),
-    })
-      .then(async (updateResponse) => {
-        const text = await updateResponse.text();
+      const updateHosts = groupHostIds.map(async (hostID) => {
+        const response = await fetch("api/hosts", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            hostID: hostID,
+            imageID: selectedImage?.id,
+            kernelDevice: selectedPrimaryDisk
+          })
+        })
+        const text = await response.text();
         let updateData;
         try {
           updateData = JSON.parse(text);
         } catch {
-          throw new Error(`Update group failed with non-JSON response: ${text}`);
+          throw new Error(`Update host failed with non-JSON response: ${text}`);
         }
 
-        if (!updateResponse.ok)
-          throw new Error(updateData.error || "Failed to update group");
+        if (!response.ok)
+          throw new Error(updateData.error || "Failed to update host ");
 
-        return fetch("/api/groups", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "startMulticast",
-            groupID: selectedGroup.id,
-            taskTypeID: "8",
-            name: `Multicast for ${selectedGroup.name}`,
-          }),
-        });
-      })
-      .then(async (multicastResponse) => {
-        const text = await multicastResponse.text();
-        let multicastData;
-        try {
-          multicastData = JSON.parse(text);
-        } catch {
-          throw new Error(`Multicast start failed with non-JSON response: ${text}`);
-        }
-
-        if (!multicastResponse.ok)
-          throw new Error(multicastData.error || "Failed to start multicast");
-
-        console.log("Multicast started successfully:", multicastData);
-        alert("🎉 Multicast started successfully!");
-        // 👇 This triggers a task refresh
-        setRefreshTasks(prev => !prev);
-      })
-      .catch((error: unknown) => {
-        let message = "Unknown error";
-        if (error instanceof Error) message = error.message;
-        else if (typeof error === "string") message = error;
-
-        console.error("Error during multicast process:", message);
-        alert(`❌ An unexpected error occurred: ${message}`);
       });
+
+      await Promise.all(updateHosts);
+
+      const groupResponse = await fetch("/api/groups", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          groupID: selectedGroup.id,
+          imageID: selectedImage.id,
+          kernelDevice: selectedPrimaryDisk,
+          hostIDs: groupHostIds,
+        }),
+      })
+      const text = await groupResponse.text();
+      let updateData;
+      try {
+        updateData = JSON.parse(text);
+      } catch {
+        throw new Error(`Update group failed with non-JSON response: ${text}`);
+      }
+
+      if (!groupResponse.ok)
+        throw new Error(updateData.error || "Failed to update group");
+
+      const multicastResponse = await fetch("/api/groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "startMulticast",
+          groupID: selectedGroup.id,
+          taskTypeID: "8",
+          name: `Multicast for ${selectedGroup.name}`,
+        }),
+      });
+
+      const multiCastText = await multicastResponse.text();
+      let multicastData;
+      try {
+        multicastData = JSON.parse(multiCastText);
+      } catch {
+        throw new Error(`Multicast start failed with non-JSON response: ${text}`);
+      }
+
+      if (!multicastResponse.ok)
+        throw new Error(multicastData.error || "Failed to start multicast");
+
+      console.log("Multicast started successfully:", multicastData);
+      alert("🎉 Multicast started successfully!");
+      // 👇 This triggers a task refresh
+      setRefreshTasks(prev => !prev);
+    } catch (error: unknown) {
+      let message = "Unknown error";
+      if (error instanceof Error) message = error.message;
+      else if (typeof error === "string") message = error;
+
+      console.error("Error during multicast process:", message);
+      alert(`❌ An unexpected error occurred: ${message}`);
+    };
   };
 
 
