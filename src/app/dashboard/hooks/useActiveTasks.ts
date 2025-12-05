@@ -17,6 +17,7 @@ export function useActiveTasks(groupHostIds : number[], refreshTrigger: boolean)
         const hostIdsParam = groupHostIds.join(",");
         const res = await fetch(`/api/tasks/active?hostIdsParam=${hostIdsParam}`);
         const data: Task[] = await res.json();
+        console.log(data);
         setActiveTasks(data);
 
         if (data.length === 0 && intervalId) {

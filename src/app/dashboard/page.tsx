@@ -54,6 +54,17 @@ export default function Dashboard() {
     return <Typography>Loading...</Typography>;
   }
 
+  // States for tasks
+  const stateMap: Record<number, string> = {
+  0: "Unknown",
+  1: "Queued",
+  2: "In Progress",
+  3: "Completed",
+  4: "Failed",
+  5: "Cancelled",
+  6: "On Hold",
+};
+
   // Map group associations to hosts
   const groupMap = groupAssociations.reduce((hostGroupMap: any, assoc: any) => {
     if (!assoc.hostID || !assoc.groupID)
@@ -547,19 +558,19 @@ return (
                         mb={0.5}
                       >
                         <Typography fontSize="0.9rem" flex={1}>
-                          {task.host?.name || task.name}
+                          {hosts.find((host) => host.id == task.hostID)?.name || task.name}
                         </Typography>
                         <Typography fontSize="0.9rem" color="text.secondary" flex={1}>
-                          {task.image?.name || "No image"}
+                          {images.find((image) => image.id == task.imageID)?.name || "No image"}
                         </Typography>
                         <Chip
                           label={
                             task.typeID === 1
-                              ? `Unicast ${task.state?.name}`
+                              ? `Unicast ${stateMap[task.stateID] || "Unknown status"}`
                               : task.typeID === 8
-                                ? `Multicast ${task.state?.name}`
+                                ? `Multicast ${stateMap[task.stateID] || "Unknown status"}`
                                 : task.typeID === 18
-                                  ? `Fast Wipe ${task.state?.name}`
+                                  ? `Fast Wipe ${stateMap[task.stateID] || "Unknown status"}`
                                   : task.state?.name
                           }
                           color={
