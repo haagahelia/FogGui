@@ -17,13 +17,14 @@ import { DataGrid, GridColDef, GridToolbar } from "@mui/x-data-grid";
 import { Group } from "@/types/group";
 import { Image } from "@/types/image";
 import { Groupassociation } from "@/types/groupassociation";
+import { useActiveTasks } from "../dashboard/hooks/useActiveTasks";
 
 export default function Groups() {
   const [data, setData] = useState<Group[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [primaryDisk, setPrimaryDisk] = useState<string | null>(null);
- // const [dialogOpen, setDialogOpen] = useState(false);
+  // const [dialogOpen, setDialogOpen] = useState(false);
   const [imageData, setImageData] = useState<Image[]>([]);
   const [selectedImage, setSelectedImage] = useState<Image | null>(null);
   const [groupAssociations, setGroupAssociations] = useState<Groupassociation[]>([]);
@@ -34,49 +35,60 @@ export default function Groups() {
   const disk1value = process.env.NEXT_PUBLIC_PRIMARY_DISK_VALUE_1;
   const disk2value = process.env.NEXT_PUBLIC_PRIMARY_DISK_VALUE_2;
 
+  const [refreshTasks, setRefreshTasks] = useState(false);
+
+  // Get host IDs that are part of the selected group
+  const groupHostIds = useMemo(() =>
+    selectedGroup
+      ? groupAssociations.filter(a => a.groupID === selectedGroup.id).map(a => a.hostID)
+      : [],
+    [selectedGroup, groupAssociations]);
+
+  const activeTasks = useActiveTasks(groupHostIds, refreshTasks);
+
   const router = useRouter();
 
   useEffect(() => {
-  const fetchData = async () => {
-    try {
-      const assocEndpoint = useDummyData ? "/dummyGroupAssociation.json" : "/api/groupassociations";
-      const groupEndpoint = useDummyData ? "/dummyGroupData.json" : "/api/groups";
-      const imageEndpoint = useDummyData ? "/dummyImageData.json" : "/api/images";
+    const fetchData = async () => {
+      try {
+        const assocEndpoint = useDummyData ? "/dummyGroupAssociation.json" : "/api/groupassociations";
+        const groupEndpoint = useDummyData ? "/dummyGroupData.json" : "/api/groups";
+        const imageEndpoint = useDummyData ? "/dummyImageData.json" : "/api/images";
 
-      const [groupAssocResponse, groupResponse, imageResponse] = await Promise.all([
-        fetch(assocEndpoint),
-        fetch(groupEndpoint),
-        fetch(imageEndpoint),
-      ]);
+        const [groupAssocResponse, groupResponse, imageResponse] = await Promise.all([
+          fetch(assocEndpoint),
+          fetch(groupEndpoint),
+          fetch(imageEndpoint),
+        ]);
 
-      if (!groupAssocResponse.ok || !groupResponse.ok || !imageResponse.ok) {
-        throw new Error("One or more fetches failed");
-      }
+        if (!groupAssocResponse.ok || !groupResponse.ok || !imageResponse.ok) {
+          throw new Error("One or more fetches failed");
+        }
 
-      const groupAssocData = await groupAssocResponse.json();
-      const groupData = await groupResponse.json();
-      const imageData = await imageResponse.json();
+        const groupAssocData = await groupAssocResponse.json();
+        const groupData = await groupResponse.json();
+        const imageData = await imageResponse.json();
 
-      // Optional: Format dates
-      const formattedGroups = (groupData.groups || []).map((group: Group) => {
-        if (!group.createdTime) return group;
-        const date = new Date(group.createdTime);
-        const formattedDate = `${String(date.getDate()).padStart(2, "0")}-${String(
-          date.getMonth() + 1
-        ).padStart(2, "0")}-${date.getFullYear()}`;
-        return { ...group, createdTime: formattedDate };
-      });
+        // Optional: Format dates
+        const formattedGroups = (groupData.data || []).map((group: Group) => {
+          if (!group.createdTime) return group;
+          const date = new Date(group.createdTime);
+          const formattedDate = `${String(date.getDate()).padStart(2, "0")}-${String(
+            date.getMonth() + 1
+          ).padStart(2, "0")}-${date.getFullYear()}`;
+          return { ...group, createdTime: formattedDate };
+        });
 
-      setGroupAssociations(groupAssocData.groupassociations || []);
-      setData(formattedGroups);
-      setImageData(imageData.images || []);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      alert("Failed to load data.");
-  };
-  }
-  fetchData();
-}, []);
+        setGroupAssociations(groupAssocData.data || []);
+        setData(formattedGroups);
+        setImageData(imageData.data || []);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        alert("Failed to load data.");
+      };
+    }
+    fetchData();
+  }, []);
 
 
   /* const handleCreateGroup = async (name: string, description: string) => {
@@ -118,78 +130,120 @@ export default function Groups() {
     setIsModalOpen(false);
   };
 
-
-     // Get host IDs that are part of the selected group
-    const groupHostIds = groupAssociations
-    .filter((assoc: any) => assoc.groupID === selectedGroup?.id)
-    .map((assoc: any) => assoc.hostID);
-
-  const startMulticast = () => {
-    if (!selectedGroup || !selectedGroup.id) {
-      console.error("No group selected or missing ID.");
+  const startMulticast = async () => {
+    if (!selectedGroup || !selectedImage || !primaryDisk || !groupHostIds?.length) {
+      console.error("Please select group, image and disk before starting multicast");
       return;
     }
-  
-    if (!primaryDisk || !selectedImage) {
-      console.error("Please select both a primary disk and an image before starting multicast.");
-      return;
-    }
-  
-    const confirmMulticast = window.confirm(`Are you sure you want to start MULTICAST session for ${selectedGroup.name}?`);
+
+    const confirmMulticast = window.confirm(
+      `Are you sure you want to start MULTICAST session for ${selectedGroup.name}?`
+    );
     if (!confirmMulticast) return;
-  
-    fetch("/api/groups", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "updateGroup",
-        groupID: selectedGroup.id,
-        imageID: selectedImage.id,
-        kernelDevice: primaryDisk,
-        hostIDs: groupHostIds,
-      }),
-    })
-      .then(async (updateResponse) => {
-        const updateData = await updateResponse.json();
-        if (!updateResponse.ok) throw new Error(updateData.error || "Failed to update group");
-  
-        return fetch("/api/groups", {
-          method: "POST",
+
+    if (activeTasks.length > 0) {
+      const confirm = window.alert(
+        `⚠️ Warning: ${activeTasks.length} host(s) in this group already have active tasks. Please wait for them to finish or cancel the tasks first.`
+      );
+      return;
+    }
+
+    try {
+
+      const updateHosts = groupHostIds.map(async (hostID) => {
+        const response = await fetch("api/hosts", {
+          method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            action: "startMulticast",
-            groupID: selectedGroup.id,
-            taskTypeID: "8",
-            name: `Multicast for ${selectedGroup.name}`,
-          }),
-        });
-      })
-      .then(async (multicastResponse) => {
-        const multicastData = await multicastResponse.json();
-        if (!multicastResponse.ok) throw new Error(multicastData.error || "Failed to start multicast");
-  
-        console.log("Multicast started successfully:", multicastData);
-        alert("🎉 Multicast started successfully!");
-        // Redirect
-        router.push("/dashboard");
-      })
-      .catch((error) => {
-        console.error("Error during multicast process:", error.message);
-        alert("❌ An unexpected error occurred.");
+            hostID: hostID,
+            imageID: selectedImage?.id,
+            kernelDevice: primaryDisk
+          })
+        })
+        const text = await response.text();
+        let updateData;
+        try {
+          updateData = JSON.parse(text);
+        } catch {
+          throw new Error(`Update host failed with non-JSON response: ${text}`);
+        }
+
+        if (!response.ok)
+          throw new Error(updateData.error || "Failed to update host ");
+
       });
+
+      await Promise.all(updateHosts);
+
+      const groupResponse = await fetch("/api/groups", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          groupID: selectedGroup.id,
+          imageID: selectedImage.id,
+          kernelDevice: primaryDisk,
+          hostIDs: groupHostIds,
+        }),
+      })
+      const text = await groupResponse.text();
+      let updateData;
+      try {
+        updateData = JSON.parse(text);
+      } catch {
+        throw new Error(`Update group failed with non-JSON response: ${text}`);
+      }
+
+      if (!groupResponse.ok)
+        throw new Error(updateData.error || "Failed to update group");
+
+      const multicastResponse = await fetch("/api/groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "startMulticast",
+          groupID: selectedGroup.id,
+          taskTypeID: "8",
+          name: `Multicast for ${selectedGroup.name}`,
+        }),
+      });
+
+      const multiCastText = await multicastResponse.text();
+      let multicastData;
+      try {
+        multicastData = JSON.parse(multiCastText);
+      } catch {
+        throw new Error(`Multicast start failed with non-JSON response: ${text}`);
+      }
+
+      if (!multicastResponse.ok)
+        throw new Error(multicastData.error || "Failed to start multicast");
+
+      console.log("Multicast started successfully:", multicastData);
+      alert("🎉 Multicast started successfully!");
+      // 👇 This triggers a task refresh
+      setRefreshTasks(prev => !prev);
+    } catch (error: unknown) {
+      let message = "Unknown error";
+      if (error instanceof Error) message = error.message;
+      else if (typeof error === "string") message = error;
+
+      console.error("Error during multicast process:", message);
+      alert(`❌ An unexpected error occurred: ${message}`);
+    };
   };
+
 
   // Create rows for DataGrid from groups data
   const rows = useMemo(() => {
-  return (data || []).map((group: Group) => ({
-    id: group.id,
-    name: group.name,
-    hostcount: group.hostcount ?? 0,
-    createdBy: group.createdBy ?? "Unknown",
-    createdTime: group.createdTime ?? "-",
-  }));
-}, [data]);
-  
+    return (data || []).map((group: Group) => ({
+      id: group.id,
+      name: group.name,
+      hostcount: group.members ?? 0,
+      createdBy: group.createdBy ?? "Unknown",
+      createdTime: group.createdTime ?? "-",
+    }));
+  }, [data]);
+
   const filteredRows = useMemo(() => {
     return rows.filter((row: { [key: string]: any }) =>
       Object.entries(filters).every(([key, value]) =>
@@ -197,11 +251,11 @@ export default function Groups() {
       )
     );
   }, [rows, filters]);
-  
+
   const handleFilterChange = (field: string, value: string) => {
     setFilters(prev => ({ ...prev, [field]: value }));
   };
-  
+
   const columns: GridColDef[] = [
     {
       field: "id",
@@ -277,7 +331,7 @@ export default function Groups() {
       ),
     },
   ];
-  
+
   return (
     <Box
       display="flex"
@@ -329,27 +383,27 @@ export default function Groups() {
           <Typography variant="body1" sx={{ marginTop: 2 }}>
             To Multicast:
           </Typography>
-  
+
           {/* Dropdown for selecting an image */}
           <FormControl fullWidth sx={{ marginTop: 3 }}>
             <InputLabel id="image-select-label">Select Image</InputLabel>
             <Select
-                labelId="image-select-label"
-                value={selectedImage?.id || ""}
-                onChange={(e) => {
-                  const selected = imageData.find(img => img.id === Number(e.target.value));
-                  setSelectedImage(selected || null);
-                }}
-                label="Choose Image"
-              >
-                {imageData.map((image: Image) => (
-                  <MenuItem key={image.id} value={image.id}>
-                    {image.name}
-                  </MenuItem>
-                ))}
-              </Select>
+              labelId="image-select-label"
+              value={selectedImage?.id || ""}
+              onChange={(e) => {
+                const selected = imageData.find(img => img.id === Number(e.target.value));
+                setSelectedImage(selected || null);
+              }}
+              label="Choose Image"
+            >
+              {imageData.map((image: Image) => (
+                <MenuItem key={image.id} value={image.id}>
+                  {image.name}
+                </MenuItem>
+              ))}
+            </Select>
           </FormControl>
-  
+
           {/* Dropdown for selecting primary disk */}
           <FormControl fullWidth sx={{ marginTop: 3 }}>
             <InputLabel id="disk-select-label">Select Primary Disk</InputLabel>
@@ -359,11 +413,11 @@ export default function Groups() {
               onChange={(e) => setPrimaryDisk(e.target.value)}
               label="Select Primary Disk"
             >
-              <MenuItem value={disk1value}>Disk 1</MenuItem>
-              <MenuItem value={disk2value}>Disk 2</MenuItem>
+              <MenuItem value={disk1value}>Disk 1 {disk1value}</MenuItem>
+              <MenuItem value={disk2value}>Disk 2 {disk2value}</MenuItem>
             </Select>
           </FormControl>
-  
+
           <Button
             onClick={startMulticast}
             variant="contained"
@@ -373,13 +427,13 @@ export default function Groups() {
           >
             Start Multicast
           </Button>
-  
+
           <Button onClick={handleModalClose} sx={{ marginTop: 2 }}>
             Close
           </Button>
         </Box>
       </Modal>
-  
+
       {/*
       <Button
         variant="contained"

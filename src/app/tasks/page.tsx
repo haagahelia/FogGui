@@ -15,15 +15,22 @@ import {
     GridRowParams,
 } from "@mui/x-data-grid";
 import { GRID_CHECKBOX_SELECTION_COL_DEF } from "@mui/x-data-grid";
+import { Task } from "@/types/task";
+import { useDashboardData } from "../dashboard/hooks/useDashboardData";
+import { HorizontalRule } from "@mui/icons-material";
 
 // Main functional component for Tasks
 export default function Tasks() {
-    const [data, setData] = useState<{ tasks: any[] }>({ tasks: [] });
+    const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState<Record<string, string>>({});
     const [selectedTasksId, setSelectedTasksId] = useState<number[]>([]);
 
     const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true";
+
+
+    const { groupAssociations, hosts, groups, images } = useDashboardData(useDummyData);
+
 
     useEffect(() => {
         const fetchData = async () => {
@@ -41,12 +48,12 @@ export default function Tasks() {
 
                 const jsonData = await response.json();
 
-                if (!jsonData.tasks || !Array.isArray(jsonData.tasks)) {
+                if (!jsonData.data || !Array.isArray(jsonData.data)) {
                     console.error("Task data is not in expected format:", jsonData);
                     return;
                 }
-
-                setData(jsonData);
+                console.log(jsonData.data);
+                setTasks(jsonData.data);
             } catch (error) {
                 console.error("Error fetching tasks:", error);
                 alert("Failed to load tasks.");
@@ -58,33 +65,22 @@ export default function Tasks() {
         fetchData();
     }, []);
 
-    // Memoized rows for the table, mapped from the fetched task data
-    const rows = useMemo(() => {
-        return data.tasks.map((task: any) => ({
-            id: task.id,
-            createdBy: task.createdBy,
-            hostName: task.host?.name ?? "N/A",
-            imageName: task.image?.name ?? "N/A",
-            createdTime: task.createdTime,
-            node: task.node ?? "N/A",
-            status: task.state?.name ?? "N/A",
-            progress: parseFloat(task.percent) || 0,
-        }));
-    }, [data]);
-
-    // Filter the rows based on active filters
-    const filteredRows = useMemo(() => {
-        return rows.filter((row: any) =>
-            Object.entries(filters).every(([key, value]) =>
-                row[key]?.toString().toLowerCase().includes(value.toLowerCase())
-            )
-        );
-    }, [rows, filters]);
-
-    // Update filters when the user types something in filter fields
-    const handleFilterChange = (field: string, value: string) => {
-        setFilters((prev) => ({ ...prev, [field]: value }));
+    // States for tasks
+    const stateMap: Record<number, string> = {
+        1: "Queued",
+        2: "Checked in",
+        3: "In-Progress",
+        4: "Complete",
+        5: "Cancelled",
     };
+
+    // Types of tasks
+    const typeMap: Record<number, string> = {
+        1: "Unicast",
+        2: "Capture",
+        8: "Multicast",
+        18: "Fast Wipe",
+    }
 
     // Color the progress bar based on task status
     const coloringBar = (status: string) => {
@@ -102,9 +98,51 @@ export default function Tasks() {
         }
     };
 
+    // Memoized rows for the table, mapped from the fetched task data
+    const rows = useMemo(() => {
+        return tasks.map((task: any) => ({
+            id: task.id,
+            name: typeMap[task.typeID] || "N/A",
+            createdBy: task.createdBy,
+            hostName: hosts.find((host) => host.id == task.hostID)?.name || "N/A",
+            imageName: images.find((image) => image.id == task.imageID)?.name || "N/A",
+            createdTime: task.createdTime,
+            node: task.node ?? "N/A",
+            status: stateMap[task.stateID] || "N/A",
+            progress: parseFloat(task.percent) || 0,
+        }));
+    }, [tasks]);
+
+    // Filter the rows based on active filters
+    const filteredRows = useMemo(() => {
+        return rows.filter((row: any) =>
+            Object.entries(filters).every(([key, value]) =>
+                row[key]?.toString().toLowerCase().includes(value.toLowerCase())
+            )
+        );
+    }, [rows, filters]);
+
+    // Update filters when the user types something in filter fields
+    const handleFilterChange = (field: string, value: string) => {
+        setFilters((prev) => ({ ...prev, [field]: value }));
+    };
+
     // Columns for the DataGrid
     const columns: GridColDef[] = [
         { ...GRID_CHECKBOX_SELECTION_COL_DEF }, // Checkbox column
+        {
+            field: "name",
+            headerName: "Name",
+            flex: 1,
+            sortable: true,
+            renderHeader: () => (
+                <FilterHeader
+                    label="Name"
+                    value={filters.name || ""}
+                    onChange={(val) => handleFilterChange("name", val)}
+                />
+            ),
+        },
         {
             field: "createdBy",
             headerName: "Started By",
@@ -120,12 +158,12 @@ export default function Tasks() {
         },
         {
             field: "hostName",
-            headerName: "Hostname MAC",
+            headerName: "Hostname",
             flex: 1,
             sortable: true,
             renderHeader: () => (
                 <FilterHeader
-                    label="Hostname MAC"
+                    label="Hostname"
                     value={filters.hostName || ""}
                     onChange={(val) => handleFilterChange("hostName", val)}
                 />
@@ -260,7 +298,7 @@ export default function Tasks() {
 
     if (loading) {
         content = <Typography variant="body1">Loading tasks...</Typography>;
-    } else if (data.tasks.length > 0) {
+    } else if (tasks.length > 0) {
         content = (
             <Box sx={{ height: 600, width: "100%" }}>
                 <DataGrid
@@ -299,14 +337,15 @@ export default function Tasks() {
             flexDirection="column"
             alignItems="center"
             justifyContent="center"
-            sx={{border: "3px solid #ccc", padding: 5, borderRadius: 2}}
+            sx={{ border: "3px solid #ccc", padding: 5, borderRadius: 2 }}
         >
             <Typography variant="h4" gutterBottom>
                 Tasks
             </Typography>
 
             {content}
-            <Button variant="outlined"  onClick={handleCancelTasks} sx={{
+           {selectedTasksId.length > 0 && (
+            <Button variant="outlined" onClick={handleCancelTasks} sx={{
                 mt: 2.5,
                 color: "red",
                 borderColor: "red",
@@ -316,18 +355,19 @@ export default function Tasks() {
                     color: "black"
                 },
             }}>Cancel selected tasks</Button>
+            )} 
         </Box>
         </>
 
-);
+    );
 }
 
 // Filter header component for each column's filter input
 function FilterHeader({
-                          label,
-                          value,
-                          onChange,
-                      }: Readonly<{
+    label,
+    value,
+    onChange,
+}: Readonly<{
     label: string;
     value: string;
     onChange: (val: string) => void;

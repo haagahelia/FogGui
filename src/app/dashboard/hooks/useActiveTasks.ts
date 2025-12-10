@@ -1,16 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Task } from "@/types/task";
 
-export function useActiveTasks(groupHostIds : number[], refreshTrigger: boolean) {
+export function useActiveTasks(groupHostIds: number[], refreshTrigger: boolean) {
   const [activeTasks, setActiveTasks] = useState<Task[]>([]);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const stopInterval = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
 
   useEffect(() => {
     if (!groupHostIds.length) {
       setActiveTasks([]);
+      stopInterval();
       return;
     }
-  
-    let intervalId: NodeJS.Timeout | null = null;
 
     const fetchTasks = async () => {
       try {
@@ -20,21 +27,21 @@ export function useActiveTasks(groupHostIds : number[], refreshTrigger: boolean)
         console.log(data);
         setActiveTasks(data);
 
-        if (data.length === 0 && intervalId) {
-          clearInterval(intervalId);
+        if (data.length === 0) {
+          stopInterval();
+        } else if (!intervalRef.current) {
+          intervalRef.current = setInterval(fetchTasks, 5000);
         }
       } catch (e) {
         console.error("Failed to fetch active tasks:", e);
         setActiveTasks([]);
+        stopInterval();
       }
     };
 
     fetchTasks();
-    intervalId = setInterval(fetchTasks, 5000);
 
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
+    return () => stopInterval();
   }, [groupHostIds, refreshTrigger]);
 
   return activeTasks;

@@ -5,5 +5,5 @@ export interface Group {
     createdBy?: string;
     createdTime?: string;
     kernelDevice?: string; // this is "primary disk"
-    hostcount?: number;
+    members?: number;
   }
