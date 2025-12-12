@@ -42,12 +42,12 @@ export default function Images() {
 
           const jsonData = await response.json();
 
-          if (!jsonData.hosts || !Array.isArray(jsonData.hosts)) {
+          if (!jsonData.data || !Array.isArray(jsonData.data)) {
             console.error("Host data is not in expected format:", jsonData);
             return;
           }
 
-          setHostData({ hosts: jsonData.hosts });
+          setHostData({ hosts: jsonData.data });
 
           if (useDummyData) {
             console.log("Using dummy data");
@@ -74,13 +74,15 @@ export default function Images() {
       
           const jsonData = await response.json();
       
-          if (!jsonData.images || !Array.isArray(jsonData.images)) {
+          if (!jsonData.data || !Array.isArray(jsonData.data)) {
             console.error("Image data is not in expected format:", jsonData);
             return;
           }
+
+          console.log(jsonData.data);
       
           // Process each image in the images array
-          const formattedImages = jsonData.images.map(formatImageData);
+          const formattedImages = jsonData.data.map(formatImageData);
       
           // Set the state with the formatted images data
           setImageData({ images: formattedImages });
@@ -157,7 +159,6 @@ export default function Images() {
       return imageData.images?.map((image: any) => ({
         id: image.id,
         name: image.name,
-        storageGroup: image.storagegroupname,
         sizeGiB: image.sizeGiB,
         createdTime: image.createdTime,
         // Include the whole image object if needed for future extensions
@@ -198,19 +199,6 @@ export default function Images() {
         label="Image Name"
         value={filters.name || ""}
         onChange={(val) => handleFilterChange("name", val)}
-        />
-      ),
-      },
-      {
-      field: "storageGroup",
-      headerName: "Storage Group",
-      flex: 1,
-      sortable: true,
-      renderHeader: () => (
-        <FilterHeader
-        label="Storage Group"
-        value={filters.storageGroup || ""}
-        onChange={(val) => handleFilterChange("storageGroup", val)}
         />
       ),
       },
@@ -319,7 +307,7 @@ export default function Images() {
                          <TableRow key={host.id}>
                            <TableCell>{host.id}</TableCell>
                            <TableCell>{host.name}</TableCell>
-                           <TableCell>{host.macs[0]}</TableCell>
+                           <TableCell>{host.primac}</TableCell>
                            <TableCell>
                            <Button 
                                 onClick={() => {
