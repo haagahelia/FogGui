@@ -1,20 +1,14 @@
+import { fogFetchJson } from "@/lib/fogApi";
+
+// GET /api/groups - Get all groups
 export async function GET() {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_FOG_API_BASE_URL}/fog/group`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "fog-api-token": process.env.NEXT_PUBLIC_FOG_API_TOKEN || "",
-        "fog-user-token": process.env.NEXT_PUBLIC_FOG_API_USER_KEY || "",
-      },
+    const groups = await fogFetchJson("/fog/group", { method: "GET" });
+
+    return new Response(JSON.stringify(groups), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch groups: ${response.statusText}`);
-    }
-
-    const groups = await response.json();
-    return new Response(JSON.stringify(groups), { status: 200, headers: { "Content-Type": "application/json" } });
   } catch (error: any) {
     return new Response(error.message, { status: 500 });
   }
@@ -22,15 +16,23 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   try {
-    const bodyText = await req.text();  // Log the raw body as text
+    const bodyText = await req.text(); // Log the raw body as text
 
-    const body = JSON.parse(bodyText);  // Manually parse the body to see any discrepancies
+    const body = JSON.parse(bodyText); // Manually parse the body to see any discrepancies
 
     const { hostIDs, kernelDevice, imageID, groupID } = body;
-    if (!Array.isArray(hostIDs) || hostIDs.length === 0 || !kernelDevice || !groupID || !imageID) {
+    if (
+      !Array.isArray(hostIDs) ||
+      hostIDs.length === 0 ||
+      !kernelDevice ||
+      !groupID ||
+      !imageID
+    ) {
       return new Response(
-        JSON.stringify({ error: "Missing host IDs, kernel device, groupID, or imageID" }),
-        { status: 400 }
+        JSON.stringify({
+          error: "Missing host IDs, kernel device, groupID, or imageID",
+        }),
+        { status: 400 },
       );
     }
 
@@ -53,7 +55,7 @@ export async function PUT(req: Request) {
 
     // updating selectedGroups each hosts kernelDevice (Primary disk)
     // commented out
-/*
+    /*
     const results = await Promise.allSettled(
       hostIDs.map((hostId: number) => {
         console.log(`Sending PUT to host ${hostId}...`);
@@ -88,24 +90,31 @@ export async function PUT(req: Request) {
       );
     }
 */
-    return new Response(JSON.stringify({ success: true, message: "All hosts updated successfully" }), {
-  status: 200,
-  headers: { "Content-Type": "application/json" },
-});
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "All hosts updated successfully",
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   } catch (error: any) {
     console.error("Error during PUT:", error.message); // Log any errors
-    return new Response(error.message || "Internal server error", { status: 500 });
+    return new Response(error.message || "Internal server error", {
+      status: 500,
+    });
   }
 }
-
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
 
     // Create empty group possibility commented out
-    
-   /* if (body.action === "createGroup") {
+
+    /* if (body.action === "createGroup") {
       // Handle group creation
       const { name, description } = body;
       if (!name || name.trim() === "") {
@@ -135,7 +144,10 @@ export async function POST(req: Request) {
       // Handle multicast task
       const { groupID, taskTypeID, name } = body;
       if (!groupID || !taskTypeID || !name) {
-        return new Response(JSON.stringify({ error: "Missing required parameters" }), { status: 400 });
+        return new Response(
+          JSON.stringify({ error: "Missing required parameters" }),
+          { status: 400 },
+        );
       }
 
       const apiUrl = `${process.env.NEXT_PUBLIC_FOG_API_BASE_URL}/fog/group/${groupID}/task`;
@@ -148,43 +160,8 @@ export async function POST(req: Request) {
           "fog-user-token": process.env.NEXT_PUBLIC_FOG_API_USER_KEY || "",
         },
         body: JSON.stringify({
-          taskTypeID, name,
-          isActive: "1",
-          shutdown: "0",
-          other2: "0",
-          other4: "1",
-          wol: "1",
-         }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        return new Response(JSON.stringify({ error: `Failed to start multicast: ${errorText}` }), { status: response.status });
-      }
-
-      const responseData = await response.json();
-      return new Response(JSON.stringify({ success: true, data: responseData }), { status: 200 });
-    }
-
-    if (body.action === "startUnicast") {
-      // Handle unicast deployment
-      const { groupID } = body;
-
-      if (!groupID) {
-        return new Response(JSON.stringify({ error: "Missing groupID for deployment" }), { status: 400 });
-      }
-    
-      const apiUrl = `${process.env.NEXT_PUBLIC_FOG_API_BASE_URL}/fog/group/${groupID}/task`;
-    
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "fog-api-token": process.env.NEXT_PUBLIC_FOG_API_TOKEN || "",
-          "fog-user-token": process.env.NEXT_PUBLIC_FOG_API_USER_KEY || "",
-        },
-        body: JSON.stringify({
-          taskTypeID: "1",    // Unicast deployment
+          taskTypeID,
+          name,
           isActive: "1",
           shutdown: "0",
           other2: "0",
@@ -192,22 +169,75 @@ export async function POST(req: Request) {
           wol: "1",
         }),
       });
-    
+
       if (!response.ok) {
         const errorText = await response.text();
-        return new Response(JSON.stringify({ error: `Failed to start deployment: ${errorText}` }), {
-          status: response.status,
-        });
+        return new Response(
+          JSON.stringify({ error: `Failed to start multicast: ${errorText}` }),
+          { status: response.status },
+        );
       }
-    
+
       const responseData = await response.json();
-      return new Response(JSON.stringify({ success: true, data: responseData }), { status: 200 });
+      return new Response(
+        JSON.stringify({ success: true, data: responseData }),
+        { status: 200 },
+      );
     }
 
-    return new Response(JSON.stringify({ error: "Invalid action" }), { status: 400 });
+    if (body.action === "startUnicast") {
+      // Handle unicast deployment
+      const { groupID } = body;
 
+      if (!groupID) {
+        return new Response(
+          JSON.stringify({ error: "Missing groupID for deployment" }),
+          { status: 400 },
+        );
+      }
+
+      const apiUrl = `${process.env.NEXT_PUBLIC_FOG_API_BASE_URL}/fog/group/${groupID}/task`;
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "fog-api-token": process.env.NEXT_PUBLIC_FOG_API_TOKEN || "",
+          "fog-user-token": process.env.NEXT_PUBLIC_FOG_API_USER_KEY || "",
+        },
+        body: JSON.stringify({
+          taskTypeID: "1", // Unicast deployment
+          isActive: "1",
+          shutdown: "0",
+          other2: "0",
+          other4: "1",
+          wol: "1",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        return new Response(
+          JSON.stringify({ error: `Failed to start deployment: ${errorText}` }),
+          {
+            status: response.status,
+          },
+        );
+      }
+
+      const responseData = await response.json();
+      return new Response(
+        JSON.stringify({ success: true, data: responseData }),
+        { status: 200 },
+      );
+    }
+
+    return new Response(JSON.stringify({ error: "Invalid action" }), {
+      status: 400,
+    });
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+    });
   }
-  
 }

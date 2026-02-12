@@ -1,20 +1,14 @@
+import { fogFetchJson } from "@/lib/fogApi";
+
+// GET /api/hosts - Get all host machines
 export async function GET() {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_FOG_API_BASE_URL}/fog/host`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "fog-api-token": process.env.NEXT_PUBLIC_FOG_API_TOKEN || "",
-        "fog-user-token": process.env.NEXT_PUBLIC_FOG_API_USER_KEY || "",
-      },
+    const hosts = await fogFetchJson("/fog/host", { method: "GET" });
+
+    return new Response(JSON.stringify(hosts), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch hosts: ${response.statusText}`);
-    }
-
-    const hosts = await response.json(); // Parse response JSON
-    return new Response(JSON.stringify(hosts), { status: 200, headers: { "Content-Type": "application/json" } });
   } catch (error: any) {
     return new Response(error.message, { status: 500 });
   }
@@ -31,7 +25,7 @@ export async function PUT(req: Request) {
     if (!hostID || !kernelDevice || !imageID) {
       return new Response(
         JSON.stringify({ error: "Missing host ID, image ID or kernel device" }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -49,21 +43,27 @@ export async function PUT(req: Request) {
     });
 
     if (!hostRes.ok) {
-      return new Response("Failed to update host image or kerneldevice", { status: 500 });
+      return new Response("Failed to update host image or kerneldevice", {
+        status: 500,
+      });
     }
 
-    return new Response(JSON.stringify({ success: true, message: "All hosts updated successfully" }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-
-
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "All hosts updated successfully",
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   } catch (error: any) {
     console.error("Error editing host:", error.message); // Log any errors
-    return new Response(error.message || "Internal server error", { status: 500 });
+    return new Response(error.message || "Internal server error", {
+      status: 500,
+    });
   }
-
-
 }
 /*
 export async function DELETE(req: Request) {
