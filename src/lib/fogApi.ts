@@ -10,7 +10,7 @@ const defaultHeaders = {
   "fog-user-token": process.env.NEXT_PUBLIC_FOG_API_USER_KEY || "",
 };
 
-export async function fogFetch(path: string, options: RequestInit = {}) {
+export async function fogFetchJson(path: string, options: RequestInit = {}) {
   const response = await fetch(`${fogApiBase}${path}`, {
     ...options,
     headers: {
@@ -19,5 +19,11 @@ export async function fogFetch(path: string, options: RequestInit = {}) {
     },
   });
 
-  return response;
+  if (!response.ok) {
+    throw new Error(response.statusText || `HTTP ${response.status}`);
+  }
+
+  const data = await response.json().catch(() => null);
+
+  return data;
 }
