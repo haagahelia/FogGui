@@ -4,7 +4,7 @@ import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { useState } from "react";
 import PersonIcon from "@mui/icons-material/Person";
-import {Session} from 'next-auth'
+import { Session } from "next-auth";
 
 // Define the type for the MenuBar props
 interface MenuBarProps {
@@ -28,7 +28,15 @@ const MenuBar = ({ session }: MenuBarProps) => {
               Dashboard
             </Link>
           </li>
+
           <li>
+            <Link href="/test" className="hover:text-gray-400">
+              Test-Dashboard
+            </Link>
+          </li>
+          {/* Comment out as user only need to see Dashboard page */}
+
+          {/* <li>
             <Link href="/hosts" className="hover:text-gray-400">
               Hosts
             </Link>
@@ -47,7 +55,8 @@ const MenuBar = ({ session }: MenuBarProps) => {
             <Link href="/tasks" className="hover:text-gray-400">
               Tasks
             </Link>
-          </li>
+          </li> */}
+
           {/* User icon and dropdown */}
           {session?.user && (
             <li className="relative flex items-center">
@@ -95,10 +104,10 @@ const MenuBar = ({ session }: MenuBarProps) => {
                     onClick={(e) => {
                       e.preventDefault();
                       const confirmed = window.confirm(
-                        "Are you sure you want to log out from FOG GUI?"
+                        "Are you sure you want to log out from FOG GUI?",
                       );
                       if (confirmed) {
-                        localStorage.removeItem("selectedGroup")
+                        localStorage.removeItem("selectedGroup");
                         signOut({ callbackUrl: "/" });
                       }
                     }}
