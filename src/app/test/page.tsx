@@ -1,111 +1,147 @@
 "use client";
 
+import React, { useState } from "react";
 import { useDashboardData } from "@/test-hooks/useDashboardData";
-import { useState } from "react";
 
-export default function DashboardPage() {
-  const { groups, images, hosts, groupAssociations, loading, error } =
-    useDashboardData();
+export default function MulticastDashboard() {
+  const { groups, images, loading, error } = useDashboardData();
 
-  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
-  const [selectedImageId, setSelectedImageId] = useState<number | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [selectedImageId, setSelectedImageId] = useState("");
+  const [selectedDisk, setSelectedDisk] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error: {error}</p>;
+  const diskOptions = [
+    process.env.NEXT_PUBLIC_PRIMARY_DISK_VALUE_1,
+    process.env.NEXT_PUBLIC_PRIMARY_DISK_VALUE_2,
+  ].filter(Boolean);
 
-  // Filter group associations for the selected group
-  const filteredAssociations = selectedGroupId
-    ? groupAssociations.filter((ga) => ga.groupID === selectedGroupId)
-    : [];
+  const handleMulticast = async () => {
+    if (!selectedGroupId || !selectedImageId || !selectedDisk) {
+      alert("Please select a Group, Image, and Disk.");
+      return;
+    }
 
-  // Map to host objects
-  const associatedHosts = filteredAssociations
-    .map((ga) => hosts.find((h) => h.id === ga.hostID))
-    .filter(Boolean); // remove undefined
+    if (!window.confirm("Are you sure you want to start the multicast?"))
+      return;
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/actions/multicast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          groupID: Number(selectedGroupId),
+          imageID: Number(selectedImageId),
+          kernelDevice: selectedDisk,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Server Error");
+
+      alert("Multicast started successfully!");
+    } catch (err: any) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (loading) return <div>Loading FOG Data...</div>;
+  if (error) return <div style={{ color: "red" }}>{error}</div>;
 
   return (
-    <div>
-      <h1>Dashboard</h1>
+    <div className="multicast-container">
+      <style>{`
+        .multicast-container {
+          max-width: 400px;
+          margin: 20px auto;
+          padding: 20px;
+          border: 1px solid #ccc;
+          border-radius: 8px;
+          font-family: sans-serif;
+        }
+        .form-group {
+          margin-bottom: 15px;
+        }
+        label {
+          display: block;
+          margin-bottom: 5px;
+          font-weight: bold;
+        }
+        select {
+          width: 100%;
+          padding: 8px;
+          border-radius: 4px;
+          border: 1px solid #999;
+        }
+        button {
+          width: 100%;
+          padding: 10px;
+          background-color: #0070f3;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          font-weight: bold;
+          cursor: pointer;
+        }
+        button:disabled {
+          background-color: #ccc;
+          cursor: not-allowed;
+        }
+      `}</style>
 
-      {/* Groups Dropdown */}
-      <h1>Groups</h1>
-      <select
-        value={selectedGroupId ?? ""}
-        onChange={(e) => setSelectedGroupId(Number(e.target.value))}
-      >
-        <option value="" disabled>
-          -- Select a group --
-        </option>
-        {groups.map((group) => (
-          <option key={group.id} value={group.id}>
-            {group.name}
-          </option>
-        ))}
-      </select>
+      <h2>Group Multicast</h2>
 
-      {selectedGroupId && (
-        <div style={{ marginTop: "1rem" }}>
-          <h2>Selected Group Details</h2>
-          {groups
-            .filter((g) => g.id === selectedGroupId)
-            .map((group) => (
-              <ul key={group.id}>
-                <li>ID: {group.id}</li>
-                <li>Name: {group.name}</li>
-                <li>Description: {group.description || "-"}</li>
-                <li>Kernel Device: {group.kernelDevice || "-"}</li>
-                <li>Members: {group.members}</li>
-                <li>Created: {group.createdTime}</li>
-              </ul>
-            ))}
+      <div className="form-group">
+        <label>Select Group</label>
+        <select
+          value={selectedGroupId}
+          onChange={(e) => setSelectedGroupId(e.target.value)}
+        >
+          <option value="">-- Choose Group --</option>
+          {groups.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
-          <h2>Associated Hosts</h2>
-          {associatedHosts.length > 0 ? (
-            <ul>
-              {associatedHosts.map((host) => (
-                <li key={host!.id}>{host!.name}</li>
-              ))}
-            </ul>
-          ) : (
-            <p>No hosts associated with this group.</p>
-          )}
-        </div>
-      )}
+      <div className="form-group">
+        <label>Select Image</label>
+        <select
+          value={selectedImageId}
+          onChange={(e) => setSelectedImageId(e.target.value)}
+        >
+          <option value="">-- Choose Image --</option>
+          {images.map((img) => (
+            <option key={img.id} value={img.id}>
+              {img.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
-      {/* Images Dropdown */}
-      <h1>Images</h1>
-      <select
-        value={selectedImageId ?? ""}
-        onChange={(e) => setSelectedImageId(Number(e.target.value))}
-      >
-        <option value="" disabled>
-          -- Select an image --
-        </option>
-        {images.map((img) => (
-          <option key={img.id} value={img.id}>
-            {img.name} ({img.osname})
-          </option>
-        ))}
-      </select>
+      <div className="form-group">
+        <label>Primary Disk</label>
+        <select
+          value={selectedDisk}
+          onChange={(e) => setSelectedDisk(e.target.value)}
+        >
+          <option value="">-- Choose Disk --</option>
+          {diskOptions.map((disk) => (
+            <option key={disk} value={disk}>
+              {disk}
+            </option>
+          ))}
+        </select>
+      </div>
 
-      {selectedImageId && (
-        <div style={{ marginTop: "1rem" }}>
-          <h2>Selected Image Details</h2>
-          {images
-            .filter((img) => img.id === selectedImageId)
-            .map((img) => (
-              <ul key={img.id}>
-                <li>ID: {img.id}</li>
-                <li>Name: {img.name}</li>
-                <li>Description: {img.description || "-"}</li>
-                <li>OS: {img.osname || "-"}</li>
-                <li>Image Type: {img.imagetypename || "-"}</li>
-                <li>Partition Type: {img.imageparttypename || "-"}</li>
-                <li>Created: {img.createdTime}</li>
-              </ul>
-            ))}
-        </div>
-      )}
+      <button disabled={isSubmitting} onClick={handleMulticast}>
+        {isSubmitting ? "Starting..." : "Start Multicast"}
+      </button>
     </div>
   );
 }
