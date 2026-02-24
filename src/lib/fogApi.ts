@@ -19,11 +19,12 @@ export async function fogFetchJson(path: string, options: RequestInit = {}) {
     },
   });
 
+  const text = await response.text();
+
   if (!response.ok) {
-    throw new Error(response.statusText || `HTTP ${response.status}`);
+    console.error("FOG ERROR:", response.status, text);
+    throw new Error(text || response.statusText);
   }
 
-  const data = await response.json().catch(() => null);
-
-  return data;
+  return text ? JSON.parse(text) : null;
 }
