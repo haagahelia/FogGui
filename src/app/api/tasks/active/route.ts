@@ -2,22 +2,13 @@ import { Task } from "@/types/task";
 import { fogFetchJson } from "@/lib/fogApi";
 
 // GET /api/tasks/active - Get active tasks
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url);
-    const hostIdsParam = searchParams.get("hostIdsParam");
-
-    const allActiveTasks = await fogFetchJson("/fog/task/active", {
+    const activeTasks = await fogFetchJson("/fog/task/active", {
       method: "GET",
     });
 
-    const hostIds = hostIdsParam?.split(",").map(Number) || [];
-
-    const filteredTasks = hostIds.length
-      ? allActiveTasks.filter((task: Task) => hostIds.includes(task.hostID))
-      : allActiveTasks;
-
-    return new Response(JSON.stringify(filteredTasks), {
+    return new Response(JSON.stringify(activeTasks), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
@@ -25,3 +16,28 @@ export async function GET(request: Request) {
     return new Response(error.message, { status: 500 });
   }
 }
+
+// Legacy Fetch
+// export async function GET(request: Request) {
+//   try {
+//     const { searchParams } = new URL(request.url);
+//     const hostIdsParam = searchParams.get("hostIdsParam");
+
+//     const allActiveTasks = await fogFetchJson("/fog/task/active", {
+//       method: "GET",
+//     });
+
+//     const hostIds = hostIdsParam?.split(",").map(Number) || [];
+
+//     const filteredTasks = hostIds.length
+//       ? allActiveTasks.filter((task: Task) => hostIds.includes(task.hostID))
+//       : allActiveTasks;
+
+//     return new Response(JSON.stringify(filteredTasks), {
+//       status: 200,
+//       headers: { "Content-Type": "application/json" },
+//     });
+//   } catch (error: any) {
+//     return new Response(error.message, { status: 500 });
+//   }
+// }
