@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import { Group } from "@/types/group";
 import { Image } from "@/types/image";
 import { Host } from "@/types/host";
@@ -51,5 +52,12 @@ export function useDashboardData() {
       .finally(() => setLoading(false));
   }, []);
 
-  return { groups, images, hosts, groupAssociations, loading, error };
+  return {
+    groups,
+    images,
+    hosts,
+    groupAssociations,
+    loading,
+    error,
+  };
 }
