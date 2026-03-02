@@ -18,6 +18,14 @@ export function useActiveTasks() {
         setError(err instanceof Error ? err.message : String(err));
       })
       .finally(() => setLoading(false));
+
+    const interval = setInterval(() => {
+      getActiveTasks()
+        .then(setActiveTasks)
+        .catch(() => {});
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, [trigger]);
 
   const refetch = () => setTrigger((t) => t + 1);
