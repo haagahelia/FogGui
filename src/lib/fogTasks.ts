@@ -90,3 +90,27 @@ export async function startGroupMulticast(
     task: taskResponse,
   };
 }
+
+/**
+ * Cancel a multicast deployment for a group.
+ *
+ * 1. Validate inputs
+ * 2. Cancel all multicast tasks for selected group
+ */
+export async function cancelGroupMulticast(sessionID: number) {
+  if (!sessionID) {
+    throw new MulticastError("taskID is required!");
+  }
+
+  const cancelActiveTask = await fogFetchJson(
+    `/fog/multicastsession/${sessionID}/cancel`,
+    {
+      method: "DELETE",
+    },
+  );
+
+  return {
+    success: true,
+    task: cancelActiveTask,
+  };
+}
