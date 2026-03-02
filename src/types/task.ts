@@ -67,3 +67,27 @@ export interface ActiveTask {
   wol: string;
   bypassbitlocker: string;
 }
+
+export interface MulticastSession {
+  id: number;
+  DT_RowId: string;
+  name: string;
+  mainlink: string;
+  port: number;
+  logpath: string;
+  image: string;
+  imageLink: string;
+  clients: number;
+  sessclients: number;
+  interface: string;
+  starttime: string;
+  percent: number;
+  stateID: number;
+  completetime: string;
+  isDD: number;
+  storagegroupID: number;
+  storagegroupLink: string;
+  shutdown: string;
+  maxwait: number;
+  anon5: string;
+}
