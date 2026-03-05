@@ -92,7 +92,7 @@ export interface MulticastSession {
   anon5: string;
 }
 
-export interface ScheduledMulticastPayload {
+export interface ScheduledTaskPayload {
   name: string;
   taskTypeID: string;
   isGroupTask: string;
