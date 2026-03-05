@@ -1,12 +1,15 @@
-import { startGroupMulticast, cancelGroupMulticast } from "@/lib/fogTasks";
+import {
+  startGroupMulticast,
+  cancelGroupMulticast,
+  scheduleGroupMulticast,
+} from "@/lib/fogTasks";
 
+// POST /api/actions/multicast
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    console.log("DEBUG: Received body:", body);
-    const { groupID, imageID, kernelDevice } = body;
+    const { groupID, imageID, kernelDevice, scheduledStartTime } = body;
 
-    // Strict Validation
     if (!groupID || !imageID || !kernelDevice) {
       return new Response(
         JSON.stringify({
@@ -16,11 +19,18 @@ export async function POST(req: Request) {
       );
     }
 
-    const result = await startGroupMulticast(
-      Number(groupID),
-      Number(imageID),
-      String(kernelDevice),
-    );
+    const result = scheduledStartTime
+      ? await scheduleGroupMulticast(
+          Number(groupID),
+          Number(imageID),
+          String(kernelDevice),
+          String(scheduledStartTime),
+        )
+      : await startGroupMulticast(
+          Number(groupID),
+          Number(imageID),
+          String(kernelDevice),
+        );
 
     return new Response(JSON.stringify(result), {
       status: 200,
@@ -34,6 +44,7 @@ export async function POST(req: Request) {
   }
 }
 
+// DELETE /api/actions/multicast
 export async function DELETE(req: Request) {
   try {
     const body = await req.json();
