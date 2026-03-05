@@ -91,3 +91,48 @@ export interface MulticastSession {
   maxwait: number;
   anon5: string;
 }
+
+export interface ScheduledMulticastPayload {
+  name: string;
+  taskTypeID: string;
+  isGroupTask: string;
+  hostID: number;
+  scheduleTime: number;
+  type: "Delayed";
+  isActive: string;
+  shutdown: string;
+  other2: string;
+  other4: string;
+  other3?: string;
+  imageID: number;
+}
+
+export interface ScheduledTask {
+  id: number;
+  DT_RowId: string;
+  name: string;
+  mainlink: string;
+  description: string;
+  type: "Delayed" | "Cron";
+  taskTypeID: number;
+  minute: string;
+  hour: string;
+  dayOfMonth: string;
+  month: string;
+  dayOfWeek: string;
+  isGroupTask: "1" | "0";
+  hostID: number;
+  hostLink: string;
+  shutdown: string;
+  other1: string;
+  other2: string;
+  other3: string;
+  other4: string;
+  other5: string;
+  scheduleTime: number;
+  isActive: "Yes" | "No";
+  imageID: number;
+  imageLink: string | null;
+  starttime: string;
+  taskTypeName: string;
+}
