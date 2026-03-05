@@ -1,5 +1,6 @@
 import { fogFetchJson } from "@/lib/fogApi";
 
+// GET /api/actions/multicast/sessions
 export async function GET() {
   try {
     const sessions = await fogFetchJson(`/fog/multicastsession`, {
