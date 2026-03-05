@@ -1,4 +1,5 @@
 import { fogFetchJson } from "@/lib/fogApi";
+import type { ScheduledTaskPayload } from "@/types/task";
 
 class MulticastError extends Error {
   constructor(message: string) {
@@ -92,17 +93,94 @@ export async function startGroupMulticast(
 }
 
 /**
- * Cancel a multicast deployment for a group.
+ * Schedules a multicast deployment for a group at a future time.
  *
  * 1. Validate inputs
- * 2. Cancel all multicast tasks for selected group
+ * 2. Update hosts in the group to the new image
+ * 3. Update the group image
+ * 4. Create a scheduled task via /fog/scheduledtask/create
+ */
+export async function scheduleGroupMulticast(
+  groupID: number,
+  imageID: number,
+  kernelDevice: string,
+  scheduledStartTime: string, // "YYYY-MM-DD HH:mm:ss"
+) {
+  if (!groupID || !imageID || !kernelDevice || !scheduledStartTime) {
+    throw new MulticastError(
+      "groupID, imageID, kernelDevice, and scheduledStartTime are required",
+    );
+  }
+
+  // Fetch group associations to get hostIDs
+  const associations = await fogFetchJson(`/fog/groupassociation`);
+
+  if (!associations?.data || !Array.isArray(associations.data)) {
+    throw new MulticastError("Invalid group association response");
+  }
+
+  const hostIDs = associations.data
+    .filter((a: any) => Number(a.groupID) === groupID)
+    .map((a: any) => Number(a.hostID));
+
+  if (hostIDs.length === 0) {
+    throw new MulticastError("No hosts associated with the selected group.");
+  }
+
+  // Update image and kernelDevice on each host
+  await Promise.all(
+    hostIDs.map((hostID: number) =>
+      fogFetchJson(`/fog/host/${hostID}/edit`, {
+        method: "PUT",
+        body: JSON.stringify({ imageID, kernelDevice }),
+      }),
+    ),
+  );
+
+  // Update group image
+  await fogFetchJson(`/fog/group/${groupID}/edit`, {
+    method: "PUT",
+    body: JSON.stringify({ imageID, kernelDevice }),
+  });
+
+  const scheduleTime = Math.floor(
+    new Date(scheduledStartTime).getTime() / 1000,
+  );
+
+  const payload: ScheduledTaskPayload = {
+    name: `Multicast for group ${groupID}`,
+    taskTypeID: "8",
+    isGroupTask: "1",
+    hostID: groupID,
+    scheduleTime,
+    type: "Delayed",
+    isActive: "1",
+    shutdown: "0",
+    other2: "-1",
+    other4: "1",
+    imageID: imageID,
+  };
+
+  const taskResponse = await fogFetchJson(`/fog/scheduledtask/create`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+  return {
+    success: true,
+    task: taskResponse,
+  };
+}
+
+/**
+ * Cancel all multicast tasks for selected group
  */
 export async function cancelGroupMulticast(sessionID: number) {
   if (!sessionID) {
     throw new MulticastError("taskID is required!");
   }
 
-  const cancelActiveTask = await fogFetchJson(
+  const cancelActiveSession = await fogFetchJson(
     `/fog/multicastsession/${sessionID}/cancel`,
     {
       method: "DELETE",
@@ -111,6 +189,27 @@ export async function cancelGroupMulticast(sessionID: number) {
 
   return {
     success: true,
-    task: cancelActiveTask,
+    task: cancelActiveSession,
+  };
+}
+
+/**
+ * Cancels a scheduled multicast task before it executes.
+ */
+export async function cancelScheduledTask(scheduledTaskID: number) {
+  if (!scheduledTaskID) {
+    throw new MulticastError("taskID is required!");
+  }
+
+  const cancelScheduledTask = await fogFetchJson(
+    `/fog/scheduledtask/${scheduledTaskID}/cancel`,
+    {
+      method: "DELETE",
+    },
+  );
+
+  return {
+    success: true,
+    task: cancelScheduledTask,
   };
 }
