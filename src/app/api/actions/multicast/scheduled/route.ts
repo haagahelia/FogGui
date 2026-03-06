@@ -4,13 +4,11 @@ import { cancelScheduledTask } from "@/lib/fogTasks";
 // GET /api/actions/multicast/scheduled
 export async function GET() {
   try {
-    const test = await fogFetchJson(`/fog/scheduledtask`, {
+    const scheduledTask = await fogFetchJson(`/fog/scheduledtask`, {
       method: "GET",
     });
 
-    console.log(test);
-
-    return new Response(JSON.stringify(test), {
+    return new Response(JSON.stringify(scheduledTask), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
