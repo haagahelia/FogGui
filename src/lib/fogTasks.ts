@@ -149,13 +149,13 @@ export async function scheduleGroupMulticast(
 
   const payload: ScheduledTaskPayload = {
     name: `Multicast for group ${groupID}`,
-    taskTypeID: "8",
+    taskTypeID: 8,
     isGroupTask: "1",
     hostID: groupID,
     scheduleTime,
     type: "Delayed",
-    isActive: "1",
-    shutdown: "0",
+    isActive: "Yes",
+    shutdown: "",
     other2: "-1",
     other4: "1",
     imageID: imageID,

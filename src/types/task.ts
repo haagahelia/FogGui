@@ -94,7 +94,7 @@ export interface MulticastSession {
 
 export interface ScheduledTaskPayload {
   name: string;
-  taskTypeID: string;
+  taskTypeID: number;
   isGroupTask: string;
   hostID: number;
   scheduleTime: number;
