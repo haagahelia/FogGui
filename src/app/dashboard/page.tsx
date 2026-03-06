@@ -81,6 +81,36 @@ export default function MulticastDashboard() {
     }
   };
 
+  const MULTICAST_STATES: Record<
+    number,
+    { label: string; color: string; dot?: string }
+  > = {
+    0: {
+      label: "Queuing",
+      color: "text-slate-400  bg-[#1e2535]    border-[#2a3550]",
+    },
+    1: {
+      label: "Booting",
+      color: "text-yellow-400 bg-[#2a1f00]    border-yellow-800",
+    },
+    2: {
+      label: "Attempting",
+      color: "text-orange-400 bg-[#2a1500]    border-orange-800",
+    },
+    3: {
+      label: "In-Progress",
+      color: "text-[#4a90d9]  bg-[#0d1f33]    border-[#1e3a5a]",
+    },
+    4: {
+      label: "Completed",
+      color: "text-green-400  bg-[#0d2a1a]    border-green-800",
+    },
+    5: {
+      label: "Cancelled",
+      color: "text-red-400    bg-[#2a0d0d]    border-red-800",
+    },
+  };
+
   const associatedHostIDs = groupAssociations
     .filter((assoc) => assoc.groupID === Number(selectedGroupId))
     .map((assoc) => assoc.hostID);
@@ -391,30 +421,41 @@ export default function MulticastDashboard() {
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              {enrichedTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="grid items-center gap-5 px-5 py-4 bg-[#161b27] border border-[#1e2535] rounded-lg transition-colors duration-150 hover:border-[#2a3550]"
-                  style={{ gridTemplateColumns: "1.4fr 1.6fr auto" }}
-                >
-                  <span className="text-[0.95rem] font-semibold text-slate-100 truncate">
-                    {task.hostName}
-                  </span>
-                  <span className="text-sm text-slate-400 truncate">
-                    {task.imageName}
-                  </span>
-                  {task.pct !== undefined && task.pct !== "" ? (
-                    <span className="text-sm font-medium text-[#4a90d9] whitespace-nowrap justify-self-end">
-                      {Number(task.pct.slice(-3))}%
+              {enrichedTasks.map((task) => {
+                const state = MULTICAST_STATES[task.stateID] ?? {
+                  label: `State ${task.stateID}`,
+                  color: "text-slate-400 bg-[#1e2535] border-[#2a3550]",
+                };
+                return (
+                  <div
+                    key={task.id}
+                    className="grid items-center gap-5 px-5 py-4 bg-[#161b27] border border-[#1e2535] rounded-lg transition-colors duration-150 hover:border-[#2a3550]"
+                    style={{ gridTemplateColumns: "1.4fr 1.6fr auto auto" }}
+                  >
+                    <span className="text-[0.95rem] font-semibold text-slate-100 truncate">
+                      {task.hostName}
                     </span>
-                  ) : (
-                    <div
-                      title="Running"
-                      className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_6px_#22c55e88] justify-self-end animate-pulse"
-                    />
-                  )}
-                </div>
-              ))}
+                    <span className="text-sm text-slate-400 truncate">
+                      {task.imageName}
+                    </span>
+                    <span
+                      className={`text-[0.6rem] px-2.5 py-0.5 rounded-full border whitespace-nowrap tracking-[0.05em] ${state.color}`}
+                    >
+                      {state.label}
+                    </span>
+                    {task.pct !== undefined && task.pct !== "" ? (
+                      <span className="text-sm font-medium text-[#4a90d9] whitespace-nowrap justify-self-end">
+                        {Number(task.pct.slice(-3))}%
+                      </span>
+                    ) : (
+                      <div
+                        title="Running"
+                        className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_6px_#22c55e88] justify-self-end animate-pulse"
+                      />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
