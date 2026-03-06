@@ -85,16 +85,12 @@ export default function MulticastDashboard() {
     number,
     { label: string; color: string; dot?: string }
   > = {
-    0: {
-      label: "Queuing",
-      color: "text-slate-400  bg-[#1e2535]    border-[#2a3550]",
-    },
     1: {
-      label: "Booting",
+      label: "Queuing",
       color: "text-yellow-400 bg-[#2a1f00]    border-yellow-800",
     },
     2: {
-      label: "Attempting",
+      label: "Check-in",
       color: "text-orange-400 bg-[#2a1500]    border-orange-800",
     },
     3: {
