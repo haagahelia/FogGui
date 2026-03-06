@@ -28,35 +28,6 @@ const MenuBar = ({ session }: MenuBarProps) => {
               Dashboard
             </Link>
           </li>
-
-          <li>
-            <Link href="/test" className="hover:text-gray-400">
-              Test-Dashboard
-            </Link>
-          </li>
-          {/* Comment out as user only need to see Dashboard page */}
-
-          {/* <li>
-            <Link href="/hosts" className="hover:text-gray-400">
-              Hosts
-            </Link>
-          </li>
-          <li>
-            <Link href="/groups" className="hover:text-gray-400">
-              Groups
-            </Link>
-          </li>
-          <li>
-            <Link href="/images" className="hover:text-gray-400">
-              Images
-            </Link>
-          </li>
-          <li>
-            <Link href="/tasks" className="hover:text-gray-400">
-              Tasks
-            </Link>
-          </li> */}
-
           {/* User icon and dropdown */}
           {session?.user && (
             <li className="relative flex items-center">
