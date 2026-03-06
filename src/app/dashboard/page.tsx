@@ -1,643 +1,424 @@
 "use client";
-import React, { useEffect, useState, useMemo } from "react";
-import {
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Grid,
-  Box,
-  Chip,
-  Divider,
-  FormControl,
-  Select,
-  MenuItem,
-  InputLabel,
-} from "@mui/material";
-import { Group } from "@/types/group";
-import { Image } from "@/types/image";
-import { Host } from "@/types/host";
-import { Task } from "@/types/task";
-import { Groupassociation } from "@/types/groupassociation";
 
-import HostModal from "@/components/HostModal";
+import { useState } from "react";
+import { useDashboardData } from "@/hooks/useDashboardData";
+import { useActiveTasks } from "@/hooks/useActiveTasks";
+import { useMulticastSessions } from "@/hooks/useMulticastSessions";
+import { useScheduledMulticast } from "@/hooks/useScheduledMulticast";
 
-import { useDashboardData } from "./hooks/useDashboardData";
-import { useSelectedGroupPersistence } from "./hooks/useSelectedGroupPersistence";
-import { useActiveTasks } from "./hooks/useActiveTasks";
+export default function MulticastDashboard() {
+  const { groups, images, hosts, groupAssociations, loading, error } =
+    useDashboardData();
+  const { activeTasks, refetch: refetchActiveTasks } = useActiveTasks();
+  const { multicastSessions, refetch: refetchSessions } =
+    useMulticastSessions();
+  const { scheduledMulticast, refetch: refetchScheduledMulticast } =
+    useScheduledMulticast();
 
-export default function Dashboard() {
-  const useDummyData = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true";
-  const disk1value = process.env.NEXT_PUBLIC_PRIMARY_DISK_VALUE_1;
-  const disk2value = process.env.NEXT_PUBLIC_PRIMARY_DISK_VALUE_2;
+  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [selectedImageId, setSelectedImageId] = useState("");
+  const [selectedDisk, setSelectedDisk] = useState("");
+  const [scheduledStartTime, setScheduledStartTime] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [selectedScheduledTaskId, setSelectedScheduledTaskId] = useState<
+    number | null
+  >(null);
+  const [isCancellingScheduled, setIsCancellingScheduled] = useState(false);
 
-  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
-  const [selectedImage, setSelectedImage] = useState<Image | null>(null);
-  const [selectedPrimaryDisk, setSelectedPrimaryDisk] = useState<string | null>(null);
-  const [refreshTasks, setRefreshTasks] = useState(false);
-  const [openModal, setOpenModal] = useState(false);
-  const [selectedHost, setSelectedHost] = useState<any>(null);
+  const diskOptions = [
+    process.env.NEXT_PUBLIC_PRIMARY_DISK_VALUE_1,
+    process.env.NEXT_PUBLIC_PRIMARY_DISK_VALUE_2,
+  ].filter(Boolean);
 
-  const { groupAssociations, hosts, groups, images, loading } = useDashboardData(useDummyData);
-  useSelectedGroupPersistence(groups, selectedGroup, setSelectedGroup);
-
-  // Get host IDs that are part of the selected group
-  const groupHostIds = useMemo(() =>
-    selectedGroup
-      ? groupAssociations.filter(a => a.groupID === selectedGroup.id).map(a => a.hostID)
-      : [],
-    [selectedGroup, groupAssociations]);
-
-  const activeTasks = useActiveTasks(groupHostIds, refreshTasks);
-
-  if (loading) {
-    return <Typography>Loading...</Typography>;
-  }
-
-  // States for tasks
-  const stateMap: Record<number, string> = {
-    1: "Queued",
-    2: "Checked in",
-    3: "In-Progress",
-    4: "Complete",
-    5: "Cancelled",
+  const formatScheduledTime = (value: string) => {
+    if (!value) return undefined;
+    const [datePart, timePart] = value.split("T");
+    const [year, month, day] = datePart.split("-");
+    const time = timePart.length === 5 ? timePart + ":00" : timePart;
+    return `${year}-${month}-${day} ${time}`;
   };
 
-  // Map group associations to hosts
-  const groupMap = groupAssociations.reduce((hostGroupMap: any, assoc: any) => {
-    if (!assoc.hostID || !assoc.groupID)
-      return hostGroupMap;
-    hostGroupMap[assoc.hostID] = hostGroupMap[assoc.hostID] || [];
-    hostGroupMap[assoc.hostID].push(assoc.groupID);
-    return hostGroupMap;
-  }, {});
-
-  const startMulticast = async () => {
-    if (!selectedGroup || !selectedImage || !selectedPrimaryDisk || !groupHostIds?.length) {
-      console.error("Please select group, image and disk before starting multicast");
+  const handleMulticast = async () => {
+    if (!selectedGroupId || !selectedImageId || !selectedDisk) {
+      alert("Please select a Group, Image, and Disk.");
       return;
     }
-
-    const confirmMulticast = window.confirm(
-      `Are you sure you want to start MULTICAST session for ${selectedGroup.name}?`
-    );
-    if (!confirmMulticast) return;
-
-    if (activeTasks.length > 0) {
-      const confirm = window.alert(
-        `⚠️ Warning: ${activeTasks.length} host(s) in this group already have active tasks. Please wait for them to finish or cancel the tasks first.`
-      );
+    if (!window.confirm("Are you sure you want to start the multicast?"))
       return;
-    }
 
+    setIsSubmitting(true);
     try {
-
-      const updateHosts = groupHostIds.map(async (hostID) => {
-        const response = await fetch("api/hosts", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            hostID: hostID,
-            imageID: selectedImage?.id,
-            kernelDevice: selectedPrimaryDisk
-          })
-        })
-        const text = await response.text();
-        let updateData;
-        try {
-          updateData = JSON.parse(text);
-        } catch {
-          throw new Error(`Update host failed with non-JSON response: ${text}`);
-        }
-
-        if (!response.ok)
-          throw new Error(updateData.error || "Failed to update host ");
-
-      });
-
-      await Promise.all(updateHosts);
-
-      const groupResponse = await fetch("/api/groups", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          groupID: selectedGroup.id,
-          imageID: selectedImage.id,
-          kernelDevice: selectedPrimaryDisk,
-          hostIDs: groupHostIds,
-        }),
-      })
-      const text = await groupResponse.text();
-      let updateData;
-      try {
-        updateData = JSON.parse(text);
-      } catch {
-        throw new Error(`Update group failed with non-JSON response: ${text}`);
-      }
-
-      if (!groupResponse.ok)
-        throw new Error(updateData.error || "Failed to update group");
-
-      const multicastResponse = await fetch("/api/groups", {
+      const response = await fetch("/api/actions/multicast", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "startMulticast",
-          groupID: selectedGroup.id,
-          taskTypeID: "8",
-          name: `Multicast for ${selectedGroup.name}`,
+          groupID: Number(selectedGroupId),
+          imageID: Number(selectedImageId),
+          kernelDevice: selectedDisk,
+          ...(scheduledStartTime && {
+            scheduledStartTime: formatScheduledTime(scheduledStartTime),
+          }),
         }),
       });
 
-      const multiCastText = await multicastResponse.text();
-      let multicastData;
-      try {
-        multicastData = JSON.parse(multiCastText);
-      } catch {
-        throw new Error(`Multicast start failed with non-JSON response: ${text}`);
-      }
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Server Error");
 
-      if (!multicastResponse.ok)
-        throw new Error(multicastData.error || "Failed to start multicast");
+      alert(
+        scheduledStartTime
+          ? `Multicast scheduled for ${formatScheduledTime(scheduledStartTime)}!`
+          : "Multicast started successfully!",
+      );
 
-      console.log("Multicast started successfully:", multicastData);
-      alert("🎉 Multicast started successfully!");
-      // 👇 This triggers a task refresh
-      setRefreshTasks(prev => !prev);
-    } catch (error: unknown) {
-      let message = "Unknown error";
-      if (error instanceof Error) message = error.message;
-      else if (typeof error === "string") message = error;
+      refetchActiveTasks();
+      refetchSessions();
+      refetchScheduledMulticast();
+    } catch (err: any) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-      console.error("Error during multicast process:", message);
-      alert(`❌ An unexpected error occurred: ${message}`);
+  const associatedHostIDs = groupAssociations
+    .filter((assoc) => assoc.groupID === Number(selectedGroupId))
+    .map((assoc) => assoc.hostID);
+
+  const activeTasksForSelectedGroup = activeTasks.filter((task) =>
+    associatedHostIDs.includes(task.hostID),
+  );
+
+  const enrichedTasks = activeTasksForSelectedGroup.map((task) => {
+    const host = hosts.find((h) => h.id === task.hostID);
+    const image = images.find((img) => img.id === task.imageID);
+    return {
+      ...task,
+      hostName: host?.name ?? `Host #${task.hostID}`,
+      imageName: image?.name ?? `Image #${task.imageID}`,
     };
-  };
+  });
 
+  const activeSessionId =
+    multicastSessions.find((s) => enrichedTasks.some((t) => t.name === s.name))
+      ?.id ?? null;
 
+  const scheduledTasksForGroup = scheduledMulticast
+    .filter((s) => String(s.hostID) === selectedGroupId)
+    .map((s) => {
+      const group = groups.find((g) => g.id === Number(selectedGroupId));
+      const image = images.find((img) => img.id === s.imageID);
+      return {
+        ...s,
+        groupName: group?.name ?? `Group #${s.hostID}`,
+        imageName: image?.name ?? `Image #${s.imageID}`,
+      };
+    });
 
-  const startUnicast = async () => {
-
-    if (!selectedGroup || !selectedImage || !selectedPrimaryDisk) {
-      console.error("Please select group, image and disk before starting multicast");
+  const handleCancelScheduled = async () => {
+    if (!selectedScheduledTaskId) {
+      alert("Please select a scheduled task to cancel.");
       return;
     }
-
-    const confirmUnicast = window.confirm(`Are you sure you want to start UNICAST for ${selectedGroup.name}?`);
-    if (!confirmUnicast) return;
-
-    if (activeTasks.length > 0) {
-      const confirm = window.alert(
-        `⚠️ Warning: ${activeTasks.length} host(s) in this group already have active tasks. Please wait for them to finish or cancel the tasks first.`
-      );
+    if (!window.confirm("Are you sure you want to cancel this scheduled task?"))
       return;
-    }
 
+    setIsCancellingScheduled(true);
     try {
-
-      const updateHosts = groupHostIds.map(async (hostID) => {
-        const response = await fetch("api/hosts", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            hostID: hostID,
-            imageID: selectedImage?.id,
-            kernelDevice: selectedPrimaryDisk
-          })
-        })
-        const text = await response.text();
-        let updateData;
-        try {
-          updateData = JSON.parse(text);
-        } catch {
-          throw new Error(`Update host failed with non-JSON response: ${text}`);
-        }
-
-        if (!response.ok)
-          throw new Error(updateData.error || "Failed to update host ");
-
-      });
-
-      await Promise.all(updateHosts);
-
-      const groupResponse = await fetch("/api/groups", {
-        method: "PUT",
+      const response = await fetch("/api/actions/multicast/scheduled", {
+        method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          groupID: selectedGroup.id,
-          imageID: selectedImage.id,
-          kernelDevice: selectedPrimaryDisk,
-          hostIDs: groupHostIds
-        }),
-      })
-      const text = await groupResponse.text();
-      let updateData;
-      try {
-        updateData = JSON.parse(text);
-      } catch {
-        throw new Error(`Update group failed with non-JSON response: ${text}`);
-      }
-
-      if (!groupResponse.ok)
-        throw new Error(updateData.error || "Failed to update group");
-
-
-      const unicastResponse = await fetch("/api/groups", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "startUnicast",
-          groupID: selectedGroup.id,
-        }),
+        body: JSON.stringify({ scheduledTaskID: selectedScheduledTaskId }),
       });
-
-      const unicastText = await unicastResponse.text();
-      let unicastData;
-
-      try {
-        unicastData = JSON.parse(unicastText);
-      } catch {
-        throw new Error(`Multicast start failed with non-JSON response: ${text}`);
-      }
-
-      if (!unicastResponse.ok)
-        throw new Error(unicastData.error || "Failed to start unicast")
-
-
-      console.log("unicast started successfully:", unicastData);
-      alert("🎉 Unicast started successfully!");
-      // 👇 This triggers a task refresh
-      setRefreshTasks(prev => !prev);
-
-    } catch (error: unknown) {
-      let message = "Unknown error";
-      if (error instanceof Error) message = error.message;
-      else if (typeof error === "string") message = error;
-      console.error("Error during deployment process:", message);
-      alert("❌ An unexpected error occurred: " + { message });
-    };
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Server Error");
+      alert("Scheduled task cancelled successfully!");
+      setSelectedScheduledTaskId(null);
+      refetchScheduledMulticast();
+    } catch (err: any) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setIsCancellingScheduled(false);
+    }
   };
 
-
-  const startFastWipe = async () => {
-    if (!selectedGroup || !selectedPrimaryDisk) {
-      console.error("Please select disk before starting Fast Wipe");
-      alert("⚠️ Please select disk");
+  const handleCancelActiveSession = async () => {
+    if (!activeSessionId) {
+      alert("No active session found for this group.");
       return;
     }
-
-    const confirmFastWipe = window.confirm(`Are you sure you want to start FAST WIPE for ${selectedGroup.name} in Disk ${selectedPrimaryDisk}?`);
-    if (!confirmFastWipe) return;
-
-    if (activeTasks.length > 0) {
-      const confirm = window.alert(
-        `⚠️ Warning: ${activeTasks.length} host(s) in this group already have active tasks. Please wait for them to finish or cancel the tasks first.`
-      );
+    if (
+      !window.confirm(
+        "Are you sure you want to cancel active tasks for this group?",
+      )
+    )
       return;
-    }
 
+    setIsCancelling(true);
     try {
-
-      const updateHosts = groupHostIds.map(async (hostID) => {
-        const response = await fetch("api/hosts", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            hostID: hostID,
-            imageID: selectedImage?.id,
-            kernelDevice: selectedPrimaryDisk
-          })
-        })
-        const text = await response.text();
-        let updateData;
-        try {
-          updateData = JSON.parse(text);
-        } catch {
-          throw new Error(`Update host failed with non-JSON response: ${text}`);
-        }
-
-        if (!response.ok)
-          throw new Error(updateData.error || "Failed to update host ");
-
-      });
-
-      await Promise.all(updateHosts);
-
-      // Step 1: Set the kernel device for group and hosts (== primary disk)
-      const updateResponse = await fetch("/api/groups/prepareFastWipe", {
-        method: "PUT",
+      const response = await fetch("/api/actions/multicast", {
+        method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          groupID: selectedGroup.id,
-          kernelDevice: selectedPrimaryDisk,
-          hostIDs: groupHostIds,
-        }),
+        body: JSON.stringify({ sessionID: activeSessionId }),
       });
-
-      const updateData = await updateResponse.json();
-      if (!updateResponse.ok) {
-        throw new Error(updateData.error || "Failed to update primary disk.");
-      }
-
-      // Step 2: Trigger the fast wipe task
-      const startResponse = await fetch("/api/groups/prepareFastWipe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          groupID: selectedGroup.id,
-        }),
-      });
-
-      const startData = await startResponse.json();
-      if (!startResponse.ok) {
-        throw new Error(startData.error || "Failed to start Fast Wipe task.");
-      }
-
-      // After success
-      console.log("Fast Wipe started successfully:", startData);
-      alert("🎉 Fast Wipe started successfully!");
-      // 👇 This triggers a task refresh
-      setRefreshTasks(prev => !prev);
-
-    } catch (error: any) {
-      console.error("Fast Wipe error:", error.message || error);
-      alert(`❌ Fast Wipe failed: ${error.message || "Unknown error"}`);
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Server Error");
+      alert("Tasks cancelled successfully!");
+      refetchActiveTasks();
+      refetchSessions();
+    } catch (err: any) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setIsCancelling(false);
     }
   };
 
-  // Function to handle opening the modal
-  const handleOpenModal = (host: any) => {
-    setSelectedHost(host);
-    setOpenModal(true);
-  };
-
-  // Function to handle closing the modal
-  const handleCloseModal = () => {
-    setOpenModal(false);
-    setSelectedHost(null);
-  };
-
+  if (loading) return <div className="p-8">Loading FOG Data...</div>;
+  if (error) return <div className="p-8 text-red-500">{error}</div>;
 
   return (
-    <Box sx={{ flexGrow: 1, p: 3 }}>
-      <Grid container spacing={3}>
-        {/* Left Column: Group Selector and Group Assignments */}
-        <Grid item xs={6} md={3}>
-          {/* Group Selector */}
-          <Card
-            sx={{
-              border: "2px solid #1976d2",
-              borderRadius: 2,
-              boxShadow: 2,
-              background: "#f4f8fd",
-              minWidth: 220,
-              minHeight: 170,
-              mb: 3,
+    <div className="flex min-h-screen bg-[#0f1117] text-slate-200">
+      {/* ── LEFT PANEL ── */}
+      <div className="w-[340px] min-w-[340px] bg-[#161b27] border-r border-[#1e2535] flex flex-col p-8 gap-6">
+        <div className="text-[0.7rem] font-semibold tracking-[0.15em] uppercase text-[#4a90d9] border-b border-[#1e2535] pb-3">
+          Group Multicast
+        </div>
+
+        {/* Group */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[0.65rem] font-medium tracking-[0.1em] uppercase text-slate-400">
+            Group
+          </label>
+          <select
+            className="w-full px-3 py-2.5 bg-[#0f1117] border border-[#1e2535] rounded-md text-slate-200 text-sm outline-none transition-colors duration-150 cursor-pointer appearance-none focus:border-[#4a90d9] [&>option]:bg-[#161b27]"
+            value={selectedGroupId}
+            onChange={(e) => {
+              setSelectedGroupId(e.target.value);
+              refetchActiveTasks();
+              refetchSessions();
+              refetchScheduledMulticast();
             }}
           >
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2, color: "#1976d2" }}>
-                Select a Group
-              </Typography>
-              <FormControl fullWidth>
-                <InputLabel id="group-select-label">Group</InputLabel>
-                <Select
-                  labelId="group-select-label"
-                  value={selectedGroup?.id ?? ""}
-                  onChange={(e) => {
-                    const chosenValue = e.target.value;
-                    if (chosenValue === "") {
-                      setSelectedGroup(null);
-                      return;
-                    }
-                    const group = groups.find((g) => g.id === Number(chosenValue));
-                    setSelectedGroup(group ?? null);
-                  }}
-                  label="Group"
-                  size="medium"
-                  sx={{ background: "#fff", borderRadius: 1 }}
-                >
-                  {groups.map((group: any) => (
-                    <MenuItem key={group.id} value={String(group.id)}>
-                      {group.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </CardContent>
-          </Card>
+            <option value="">— Select Group —</option>
+            {groups.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
-          {/* Group Assignments */}
-          {selectedGroup && (
-            <Card
-              sx={{
-                boxShadow: 1,
-                borderRadius: 2,
-                background: "#f4f6f8",
-                border: "1.5px solid #1976d2",
-              }}
-            >
-              <CardContent>
-                <Typography variant="h6" sx={{ fontSize: "1.1rem", color: "#1976d2", mb: 1 }}>
-                  Hosts Assigned to '{selectedGroup.name}'
-                </Typography>
-                <Typography variant="subtitle1" sx={{ mb: 1, fontSize: "0.95rem" }}>
-                  Host Count:{" "}
-                  {hosts.filter((host) =>
-                    groupAssociations.some(
-                      (assoc) => assoc.groupID === selectedGroup.id && assoc.hostID === host.id
+        {/* Image */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[0.65rem] font-medium tracking-[0.1em] uppercase text-slate-400">
+            Image
+          </label>
+          <select
+            className="w-full px-3 py-2.5 bg-[#0f1117] border border-[#1e2535] rounded-md text-slate-200 text-sm outline-none transition-colors duration-150 cursor-pointer appearance-none focus:border-[#4a90d9] [&>option]:bg-[#161b27]"
+            value={selectedImageId}
+            onChange={(e) => setSelectedImageId(e.target.value)}
+          >
+            <option value="">— Select Image —</option>
+            {images.map((img) => (
+              <option key={img.id} value={img.id}>
+                {img.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Primary Disk */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[0.65rem] font-medium tracking-[0.1em] uppercase text-slate-400">
+            Primary Disk
+          </label>
+          <select
+            className="w-full px-3 py-2.5 bg-[#0f1117] border border-[#1e2535] rounded-md text-slate-200 text-sm outline-none transition-colors duration-150 cursor-pointer appearance-none focus:border-[#4a90d9] [&>option]:bg-[#161b27]"
+            value={selectedDisk}
+            onChange={(e) => setSelectedDisk(e.target.value)}
+          >
+            <option value="">— Select Disk —</option>
+            {diskOptions.map((disk) => (
+              <option key={disk} value={disk}>
+                {disk}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Scheduled Start Time */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[0.65rem] font-medium tracking-[0.1em] uppercase text-slate-400">
+            WIP - Scheduled Start Time{" "}
+            <span className="text-slate-600 font-normal">(optional)</span>
+          </label>
+          <input
+            type="datetime-local"
+            className="w-full px-3 py-2.5 bg-[#0f1117] border border-[#1e2535] rounded-md text-slate-200 text-sm outline-none transition-colors duration-150 cursor-pointer appearance-none focus:border-[#4a90d9] [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:w-[18px] [&::-webkit-calendar-picker-indicator]:h-[18px] [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+            value={scheduledStartTime}
+            onChange={(e) => setScheduledStartTime(e.target.value)}
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-col gap-2.5">
+          <button
+            className="w-full py-3 px-3 bg-[#4a90d9] text-white border-none rounded-md text-[0.75rem] font-semibold tracking-[0.08em] uppercase cursor-pointer transition-all duration-150 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none hover:not-disabled:bg-[#3a7bc8]"
+            disabled={isSubmitting}
+            onClick={handleMulticast}
+          >
+            {isSubmitting
+              ? scheduledStartTime
+                ? "Scheduling..."
+                : "Starting..."
+              : scheduledStartTime
+                ? "Schedule Multicast"
+                : "Start Multicast"}
+          </button>
+        </div>
+      </div>
+
+      {/* ── RIGHT PANEL ── */}
+      <div className="flex-1 flex flex-col p-8 gap-7 overflow-y-auto">
+        {/* SCHEDULED TASKS */}
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between border-b border-[#1e2535] pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="text-[0.7rem] font-semibold tracking-[0.15em] uppercase text-[#4a90d9]">
+                Scheduled Tasks
+              </div>
+              <span
+                className={`text-[0.65rem] px-2.5 py-0.5 rounded-full tracking-[0.05em] ${
+                  scheduledTasksForGroup.length > 0
+                    ? "bg-[#0d1f33] text-[#4a90d9] border border-[#1e3a5a]"
+                    : "bg-[#1e2535] text-slate-500"
+                }`}
+              >
+                {scheduledTasksForGroup.length > 0
+                  ? `${scheduledTasksForGroup.length} scheduled`
+                  : "none"}
+              </span>
+            </div>
+            {scheduledTasksForGroup.length > 0 && (
+              <button
+                className="text-[0.6rem] font-semibold tracking-[0.08em] uppercase px-3 py-1 rounded border border-red-500 bg-transparent text-red-500 cursor-pointer transition-all duration-150 hover:not-disabled:bg-red-500 hover:not-disabled:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                disabled={isCancellingScheduled || !selectedScheduledTaskId}
+                onClick={handleCancelScheduled}
+              >
+                {isCancellingScheduled ? "Cancelling..." : "Cancel"}
+              </button>
+            )}
+          </div>
+
+          {!selectedGroupId || scheduledTasksForGroup.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 text-[#2a3550] text-[0.75rem] tracking-[0.1em] uppercase py-8">
+              <span className="text-2xl opacity-30">⬡</span>
+              {!selectedGroupId
+                ? "Select a group to begin"
+                : "No scheduled tasks"}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {scheduledTasksForGroup.map((task) => (
+                <div
+                  key={task.id}
+                  className={`grid items-center gap-5 px-5 py-4 border rounded-lg transition-colors duration-150 cursor-pointer ${
+                    selectedScheduledTaskId === task.id
+                      ? "border-red-500 bg-[#1a1520] hover:border-red-400"
+                      : "bg-[#161b27] border-[#1e2535] hover:border-[#2a3550]"
+                  }`}
+                  style={{ gridTemplateColumns: "1.4fr 1.2fr 1.6fr auto" }}
+                  onClick={() =>
+                    setSelectedScheduledTaskId(
+                      selectedScheduledTaskId === task.id ? null : task.id,
                     )
-                  ).length}
-                </Typography>
-                <Divider sx={{ my: 1 }} />
-                <Box sx={{ maxHeight: 350, overflowY: "auto", pr: 1 }}>
-                  {hosts
-                    .filter((host) =>
-                      groupAssociations.some(
-                        (assoc) => assoc.groupID === selectedGroup.id && assoc.hostID === host.id
-                      )
-                    )
-                    .map((host) => (
-                      <Box
-                        key={host.id}
-                        display="flex"
-                        flexDirection="column"
-                        alignItems="center"
-                        justifyContent="center"
-                        mb={1}
-                        p={1}
-                        borderBottom={"1.5px solid #e0e0e0"}
-                        maxWidth={220}
-                        mx="auto"
-                      >
-                        <Typography variant="subtitle1" sx={{ fontSize: "0.95rem" }}>
-                          <Typography
-                            component="span"
-                            sx={{ cursor: "pointer", color: "#1976d2", fontWeight: 500 }}
-                            onClick={() => handleOpenModal(host)}
-                          >
-                            {host.name}
-                          </Typography>
-                        </Typography>
-                      </Box>
-                    ))}
-                </Box>
-              </CardContent>
-            </Card>
+                  }
+                >
+                  <span className="text-[0.95rem] font-semibold text-slate-100 truncate">
+                    {task.groupName}
+                  </span>
+                  <span className="text-sm font-normal text-slate-300 whitespace-nowrap">
+                    {task.starttime}
+                  </span>
+                  <span className="text-sm text-slate-400 truncate">
+                    {task.imageName}
+                  </span>
+                  <span className="text-[0.6rem] px-2.5 py-0.5 rounded-full bg-[#0d1f33] text-[#4a90d9] border border-[#1e3a5a] whitespace-nowrap tracking-[0.05em] justify-self-end">
+                    {task.type}
+                  </span>
+                </div>
+              ))}
+            </div>
           )}
-          {selectedHost && (
-            <HostModal open={openModal} onClose={handleCloseModal} hosts={[selectedHost]} />
-          )}
-        </Grid>
+        </div>
 
-        {/* Right Column: Actions and Active Tasks */}
-        {selectedGroup && (
-          <Grid item xs={6} md={7} lg={8}>
-            <Card sx={{ boxShadow: 2, borderRadius: 2, mb: 3 }}>
-              <CardContent>
-                <Typography variant="h6">Actions for '{selectedGroup.name}'</Typography>
-                {/* Image selection */}
-                <FormControl fullWidth sx={{ my: 2 }}>
-                  <InputLabel id="image-select-label">Select Image</InputLabel>
-                  <Select
-                    labelId="image-select-label"
-                    value={selectedImage?.id ?? ""}
-                    onChange={(e) => {
-                      const image = images.find((img) => img.id === Number(e.target.value));
-                      setSelectedImage(image ?? null);
-                    }}
-                    label="Select Image"
-                  >
-                    {images.map((image: any) => (
-                      <MenuItem key={image.id} value={image.id}>
-                        {image.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+        {/* ACTIVE HOSTS */}
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between border-b border-[#1e2535] pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="text-[0.7rem] font-semibold tracking-[0.15em] uppercase text-[#4a90d9]">
+                Active Hosts
+              </div>
+              <span
+                className={`text-[0.65rem] px-2.5 py-0.5 rounded-full tracking-[0.05em] ${
+                  enrichedTasks.length > 0
+                    ? "bg-[#0d2a1a] text-green-500 border border-green-800"
+                    : "bg-[#1e2535] text-slate-500"
+                }`}
+              >
+                {enrichedTasks.length > 0
+                  ? `${enrichedTasks.length} host${enrichedTasks.length > 1 ? "s" : ""} running`
+                  : "no active session"}
+              </span>
+            </div>
+            {enrichedTasks.length > 0 && (
+              <button
+                className="text-[0.6rem] font-semibold tracking-[0.08em] uppercase px-3 py-1 rounded border border-red-500 bg-transparent text-red-500 cursor-pointer transition-all duration-150 hover:not-disabled:bg-red-500 hover:not-disabled:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                disabled={isCancelling || !activeSessionId}
+                onClick={handleCancelActiveSession}
+              >
+                {isCancelling ? "Cancelling..." : "Cancel"}
+              </button>
+            )}
+          </div>
 
-                {/* Disk selection */}
-                <FormControl fullWidth sx={{ marginBottom: 2 }}>
-                  <InputLabel id="disk-select-label">Select Primary Disk</InputLabel>
-                  <Select
-                    labelId="disk-select-label"
-                    value={selectedPrimaryDisk || ""}
-                    onChange={(e) => setSelectedPrimaryDisk(e.target.value)}
-                    label="Select Primary Disk"
-                  >
-                    <MenuItem value={disk1value}>Disk 1 {disk1value} </MenuItem>
-                    <MenuItem value={disk2value}>Disk 2 {disk2value} </MenuItem>
-                  </Select>
-                </FormControl>
-
-                {/* Action buttons */}
-                <Button
-                  onClick={startMulticast}
-                  variant="contained"
-                  sx={{ m: 0.5 }}
-                  disabled={!selectedGroup || !selectedImage || !selectedPrimaryDisk}
+          {!selectedGroupId || enrichedTasks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 text-[#2a3550] text-[0.75rem] tracking-[0.1em] uppercase py-8">
+              <span className="text-2xl opacity-30">⬡</span>
+              {!selectedGroupId
+                ? "Select a group to begin"
+                : "No active tasks for this group"}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {enrichedTasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="grid items-center gap-5 px-5 py-4 bg-[#161b27] border border-[#1e2535] rounded-lg transition-colors duration-150 hover:border-[#2a3550]"
+                  style={{ gridTemplateColumns: "1.4fr 1.6fr auto" }}
                 >
-                  Start Multicast
-                </Button>
-                <Button
-                  onClick={startUnicast}
-                  variant="contained"
-                  color="secondary"
-                  sx={{ m: 0.5 }}
-                  disabled={!selectedGroup || !selectedImage || !selectedPrimaryDisk}
-                >
-                  Start Unicast
-                </Button>
-                <Button
-                  onClick={startFastWipe}
-                  variant="contained"
-                  color="error"
-                  disabled={!selectedGroup || !selectedPrimaryDisk}
-                  sx={{ m: 0.5 }}
-                >
-                  Fast Wipe
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Active Tasks */}
-            <Card sx={{ boxShadow: 2, borderRadius: 2, background: "#f8fafc" }}>
-              <CardContent>
-                <Typography variant="h6">
-                  Active Tasks in '{selectedGroup.name}'
-                </Typography>
-                <Divider sx={{ my: 1 }} />
-
-                <Box sx={{ maxHeight: 360, overflowY: "auto" }}>
-                  {activeTasks.length > 0 ? (
-                    activeTasks.map((task: any) => (
-                      <Box key={task.id} mb={2}>
-                        <Box
-                          display="flex"
-                          justifyContent="space-between"
-                          alignItems="center"
-                          gap={1}
-                          flexWrap="wrap"
-                          mb={0.5}
-                        >
-                          <Typography fontSize="0.9rem" flex={1}>
-                            {hosts.find((host) => host.id == task.hostID)?.name || task.name}
-                          </Typography>
-                          <Typography fontSize="0.9rem" color="text.secondary" flex={1}>
-                            {images.find((image) => image.id == task.imageID)?.name || "No image"}
-                          </Typography>
-                          <Chip
-                            label={
-                              task.typeID === 1
-                                ? `Unicast ${stateMap[task.stateID] || "Unknown status"}`
-                                : task.typeID === 8
-                                  ? `Multicast ${stateMap[task.stateID] || "Unknown status"}`
-                                  : task.typeID === 18
-                                    ? `Fast Wipe ${stateMap[task.stateID] || "Unknown status"}`
-                                    : task.state?.name
-                            }
-                            color={
-                              task.typeID === 1
-                                ? "secondary"
-                                : task.typeID === 8
-                                  ? "primary"
-                                  : task.typeID === 18
-                                    ? "error"
-                                    : "default"
-                            }
-                            size="small"
-                          />
-                        </Box>
-
-                        {task.stateID === 3 && (
-                          <>
-                            {/* Progress Bar */}
-                            <Box width="100%" height={6} bgcolor="#e0e0e0" borderRadius={4}>
-                              <Box
-                                height="100%"
-                                borderRadius={4}
-                                bgcolor="#1976d2"
-                                width={`${task.percent ?? 0}%`}
-                                sx={{ transition: "width 0.5s ease-in-out" }}
-                              />
-                            </Box>
-
-                            <Typography fontSize="0.7rem" textAlign="right" color="text.secondary">
-                              {task.percent ?? 0}%
-                            </Typography>
-                          </>
-                        )}
-                      </Box>
-                    ))
+                  <span className="text-[0.95rem] font-semibold text-slate-100 truncate">
+                    {task.hostName}
+                  </span>
+                  <span className="text-sm text-slate-400 truncate">
+                    {task.imageName}
+                  </span>
+                  {task.pct !== undefined && task.pct !== "" ? (
+                    <span className="text-sm font-medium text-[#4a90d9] whitespace-nowrap justify-self-end">
+                      {Number(task.pct.slice(-3))}%
+                    </span>
                   ) : (
-                    <Typography>No active tasks</Typography>
+                    <div
+                      title="Running"
+                      className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_6px_#22c55e88] justify-self-end animate-pulse"
+                    />
                   )}
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        )}
-      </Grid>
-    </Box>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
-};
+}
