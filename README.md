@@ -169,32 +169,26 @@ FogGui/
 
 ## 7. API Documentation
 
-- `GET /api/groups`: Fetch all groups.
-- `GET /api/groupassociations`: Fetch all group-to-host associations.
-- `GET /api/hosts`: Fetch all hosts.
-- `GET /api/images`: Fetch all images.
-- `GET /api/tasks`: Fetch all tasks.
-- `GET /api/tasks/active`: Fetch active tasks.
-- `GET /api/actions/list/tasktype`: Fetch available task types.
-- `GET /api/actions/tests`: Test endpoint for FOG API connectivity.
-- `GET /api/actions/multicast/sessions`: Fetch active multicast sessions.
-- `GET /api/actions/multicast/scheduled`: Fetch scheduled multicast tasks.
-- `GET /api/users`: Fetch all local users.
-- `GET /api/auth/[...nextauth]`: NextAuth handler endpoint.
-
-- `POST /api/create-account`: Create a local user account.
-  - Request requires: `username`, `password`.
-- `POST /api/change-password`: Change a local user's password.
-  - Request requires: `username`, `currentPassword`, `newPassword`.
-- `POST /api/actions/multicast`: Start multicast immediately or schedule multicast.
-  - Request requires: `groupID`, `imageID`, `kernelDevice`.
-  - Optional: `scheduledStartTime` (if provided, scheduled multicast flow is used).
-- `POST /api/auth/[...nextauth]`: NextAuth sign-in/session POST handler.
-
-- `DELETE /api/actions/multicast`: Cancel an active multicast session.
-  - Request requires: `sessionID`.
-- `DELETE /api/actions/multicast/scheduled`: Cancel a scheduled multicast task.
-  - Request requires: `scheduledTaskID`.
+| Method     | Endpoint                           | Description                            | Required Parameters                                                    |
+| ---------- | ---------------------------------- | -------------------------------------- | ---------------------------------------------------------------------- |
+| **GET**    | `/api/groups`                      | Fetch all groups                       | -                                                                      |
+| **GET**    | `/api/groupassociations`           | Fetch all group-to-host associations   | -                                                                      |
+| **GET**    | `/api/hosts`                       | Fetch all hosts                        | -                                                                      |
+| **GET**    | `/api/images`                      | Fetch all images                       | -                                                                      |
+| **GET**    | `/api/tasks`                       | Fetch all tasks                        | -                                                                      |
+| **GET**    | `/api/tasks/active`                | Fetch active tasks                     | -                                                                      |
+| **GET**    | `/api/actions/list/tasktype`       | Fetch available task types             | -                                                                      |
+| **GET**    | `/api/actions/tests`               | Test endpoint for FOG API connectivity | -                                                                      |
+| **GET**    | `/api/actions/multicast/sessions`  | Fetch active multicast sessions        | -                                                                      |
+| **GET**    | `/api/actions/multicast/scheduled` | Fetch scheduled multicast tasks        | -                                                                      |
+| **GET**    | `/api/users`                       | Fetch all local users                  | -                                                                      |
+| **GET**    | `/api/auth/[...nextauth]`          | NextAuth handler endpoint              | -                                                                      |
+| **POST**   | `/api/create-account`              | Create a local user account            | `username`, `password`                                                 |
+| **POST**   | `/api/change-password`             | Change a local user's password         | `username`, `currentPassword`, `newPassword`                           |
+| **POST**   | `/api/actions/multicast`           | Start or schedule multicast            | `groupID`, `imageID`, `kernelDevice`<br>Optional: `scheduledStartTime` |
+| **POST**   | `/api/auth/[...nextauth]`          | NextAuth sign-in/session POST handler  | Handled by NextAuth                                                    |
+| **DELETE** | `/api/actions/multicast`           | Cancel an active multicast session     | `sessionID`                                                            |
+| **DELETE** | `/api/actions/multicast/scheduled` | Cancel a scheduled multicast task      | `scheduledTaskID`                                                      |
 
 ## 7. Deployment
 
