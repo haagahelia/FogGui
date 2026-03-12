@@ -1,5 +1,6 @@
 import { fogFetchJson } from "@/lib/fogApi";
 import type { ScheduledTaskPayload } from "@/types/task";
+import { dbRun } from "./db";
 
 class MulticastError extends Error {
   constructor(message: string) {
@@ -99,6 +100,8 @@ export async function startGroupMulticast(
  * 2. Update hosts in the group to the new image
  * 3. Update the group image
  * 4. Create a scheduled task via /fog/scheduledtask/create
+ * 5. Store the intended imageID in our own DB
+ * 6. The reconciliation job update host images 10 min before execution
  */
 export async function scheduleGroupMulticast(
   groupID: number,
@@ -166,6 +169,14 @@ export async function scheduleGroupMulticast(
     body: JSON.stringify(payload),
   });
 
+  // Store the task locally with the correct imageID
+  await dbRun(
+    `INSERT INTO scheduled_multicast_tasks
+      (fogTaskID, groupID, imageID, kernelDevice, scheduledTime, status)
+     VALUES (?, ?, ?, ?, ?, 'pending')`,
+    [taskResponse.id, groupID, imageID, kernelDevice, scheduleTime],
+  );
+
   return {
     success: true,
     task: taskResponse,
@@ -194,7 +205,7 @@ export async function cancelGroupMulticast(sessionID: number) {
 }
 
 /**
- * Cancels a scheduled multicast task before it executes.
+ * Cancels a scheduled multicast task in both FOG and our local db before it executes.
  */
 export async function cancelScheduledTask(scheduledTaskID: number) {
   if (!scheduledTaskID) {
@@ -206,6 +217,11 @@ export async function cancelScheduledTask(scheduledTaskID: number) {
     {
       method: "DELETE",
     },
+  );
+
+  await dbRun(
+    `UPDATE scheduled_multicast_tasks SET status = 'cancelled' WHERE fogTaskID = ?`,
+    [scheduledTaskID],
   );
 
   return {
