@@ -190,9 +190,9 @@ FogGui/
 | **DELETE** | `/api/actions/multicast`           | Cancel an active multicast session     | `sessionID`                                                            |
 | **DELETE** | `/api/actions/multicast/scheduled` | Cancel a scheduled multicast task      | `scheduledTaskID`                                                      |
 
-## 7. Deployment
+## 8. Deployment
 
-### 7.1 Deployment Process
+### 8.1 Deployment Process
 
 ```bash
 # Build the application
@@ -202,14 +202,14 @@ pnpm build
 pnpm start
 ```
 
-## 8. Support and Maintenance
+## 9. Support and Maintenance
 
-### 8.1 Troubleshooting Guide
+### 9.1 Troubleshooting Guide
 
 - **Issue:** Application not starting.  
-  **Solution:** Check `.env.local` configuration and ensure dependencies are installed.
+  **Solution:** Check `.env` configuration and ensure dependencies are installed.
 
-### 8.2 Frequently Asked Questions (FAQs)
+### 9.2 Frequently Asked Questions (FAQs)
 
 - **Q:** How do I reset my API credentials?  
   **A:** Regenerate them in the FOG Management Panel.
