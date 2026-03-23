@@ -3,7 +3,7 @@ import { fogFetchJson } from "@/lib/fogApi";
 // GET /api/actions/tests
 export async function GET() {
   try {
-    const test = await fogFetchJson(`/fog/scheduledtask/7`, {
+    const test = await fogFetchJson(`/fog/group/41`, {
       method: "GET",
     });
 
