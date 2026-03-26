@@ -6,8 +6,13 @@ import { useActiveTasks } from "@/hooks/useActiveTasks";
 import { useMulticastSessions } from "@/hooks/useMulticastSessions";
 import { useScheduledMulticast } from "@/hooks/useScheduledMulticast";
 import { createMulticast } from "@/services/multicastServices";
-import { TASK_STATES } from "@/lib/taskStates";
 import { formatTime } from "@/lib/formatTime";
+
+import { SelectField } from "@/components/DashboardSelectField";
+import { SectionHeader } from "@/components/DashboardSectionHeader";
+import { EmptyState } from "@/components/DashboardEmptyState";
+import { ScheduledTaskCard } from "@/components/DashboardScheduledTaskCard";
+import { ActiveHostCard } from "@/components/DashboardActiveHostsCard";
 
 export default function MulticastDashboard() {
   const { groups, images, hosts, groupAssociations, loading, error } =
@@ -117,7 +122,6 @@ export default function MulticastDashboard() {
       return;
 
     setIsCancellingScheduled(true);
-
     try {
       await cancelScheduledMulticast(selectedScheduledTaskId);
       alert("Scheduled task cancelled successfully!");
@@ -166,66 +170,36 @@ export default function MulticastDashboard() {
         </div>
 
         {/* Group */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[0.65rem] font-medium tracking-[0.1em] uppercase text-slate-400">
-            Group
-          </label>
-          <select
-            className="w-full px-3 py-2.5 bg-[#0f1117] border border-[#1e2535] rounded-md text-slate-200 text-sm outline-none transition-colors duration-150 cursor-pointer appearance-none focus:border-[#4a90d9] [&>option]:bg-[#161b27]"
-            value={selectedGroupId}
-            onChange={(e) => {
-              setSelectedGroupId(e.target.value);
-              refetchActiveTasks();
-              refetchSessions();
-              refetchScheduledMulticast();
-            }}
-          >
-            <option value="">— Select Group —</option>
-            {groups.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelectField
+          label="Group"
+          value={selectedGroupId}
+          options={groups}
+          placeholder="— Select Group —"
+          onChange={(value) => {
+            setSelectedGroupId(value);
+            refetchActiveTasks();
+            refetchSessions();
+            refetchScheduledMulticast();
+          }}
+        />
 
         {/* Image */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[0.65rem] font-medium tracking-[0.1em] uppercase text-slate-400">
-            Image
-          </label>
-          <select
-            className="w-full px-3 py-2.5 bg-[#0f1117] border border-[#1e2535] rounded-md text-slate-200 text-sm outline-none transition-colors duration-150 cursor-pointer appearance-none focus:border-[#4a90d9] [&>option]:bg-[#161b27]"
-            value={selectedImageId}
-            onChange={(e) => setSelectedImageId(e.target.value)}
-          >
-            <option value="">— Select Image —</option>
-            {images.map((img) => (
-              <option key={img.id} value={img.id}>
-                {img.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelectField
+          label="Image"
+          value={selectedImageId}
+          options={images}
+          placeholder="— Select Image —"
+          onChange={setSelectedImageId}
+        />
 
         {/* Primary Disk */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[0.65rem] font-medium tracking-[0.1em] uppercase text-slate-400">
-            Primary Disk
-          </label>
-          <select
-            className="w-full px-3 py-2.5 bg-[#0f1117] border border-[#1e2535] rounded-md text-slate-200 text-sm outline-none transition-colors duration-150 cursor-pointer appearance-none focus:border-[#4a90d9] [&>option]:bg-[#161b27]"
-            value={selectedDisk}
-            onChange={(e) => setSelectedDisk(e.target.value)}
-          >
-            <option value="">— Select Disk —</option>
-            {diskOptions.map((disk) => (
-              <option key={disk} value={disk}>
-                {disk}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelectField
+          label="Primary Disk"
+          value={selectedDisk}
+          options={diskOptions.map((d) => ({ id: d!, name: d! }))}
+          placeholder="— Select Disk —"
+          onChange={setSelectedDisk}
+        />
 
         {/* Scheduled Start Time */}
         <div className="flex flex-col gap-1.5">
@@ -263,71 +237,42 @@ export default function MulticastDashboard() {
       <div className="flex-1 flex flex-col p-8 gap-7 overflow-y-auto">
         {/* SCHEDULED TASKS */}
         <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between border-b border-[#1e2535] pb-3">
-            <div className="flex items-center gap-2.5">
-              <div className="text-[0.7rem] font-semibold tracking-[0.15em] uppercase text-[#4a90d9]">
-                Scheduled Tasks
-              </div>
-              <span
-                className={`text-[0.65rem] px-2.5 py-0.5 rounded-full tracking-[0.05em] ${
-                  scheduledTasksForGroup.length > 0
-                    ? "bg-[#0d1f33] text-[#4a90d9] border border-[#1e3a5a]"
-                    : "bg-[#1e2535] text-slate-500"
-                }`}
-              >
-                {scheduledTasksForGroup.length > 0
+          <SectionHeader
+            title="Scheduled Tasks"
+            badge={{
+              active: scheduledTasksForGroup.length > 0,
+              label:
+                scheduledTasksForGroup.length > 0
                   ? `${scheduledTasksForGroup.length} scheduled`
-                  : "none"}
-              </span>
-            </div>
-            {scheduledTasksForGroup.length > 0 && (
-              <button
-                className="text-[0.6rem] font-semibold tracking-[0.08em] uppercase px-3 py-1 rounded border border-red-500 bg-transparent text-red-500 cursor-pointer transition-all duration-150 hover:not-disabled:bg-red-500 hover:not-disabled:text-white disabled:opacity-30 disabled:cursor-not-allowed"
-                disabled={isCancellingScheduled || !selectedScheduledTaskId}
-                onClick={handleCancelScheduled}
-              >
-                {isCancellingScheduled ? "Cancelling..." : "Cancel"}
-              </button>
-            )}
-          </div>
-
+                  : "none",
+            }}
+            cancelButton={
+              scheduledTasksForGroup.length > 0
+                ? {
+                    disabled: isCancellingScheduled || !selectedScheduledTaskId,
+                    isLoading: isCancellingScheduled,
+                    onClick: handleCancelScheduled,
+                  }
+                : undefined
+            }
+          />
           {!selectedGroupId || scheduledTasksForGroup.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 text-[#2a3550] text-[0.75rem] tracking-[0.1em] uppercase py-8">
-              <span className="text-2xl opacity-30">⬡</span>
-              {!selectedGroupId
-                ? "Select a group to begin"
-                : "No scheduled tasks"}
-            </div>
+            <EmptyState
+              message={
+                !selectedGroupId
+                  ? "Select a group to begin"
+                  : "No scheduled tasks"
+              }
+            />
           ) : (
             <div className="flex flex-col gap-2">
               {scheduledTasksForGroup.map((task) => (
-                <div
+                <ScheduledTaskCard
                   key={task.id}
-                  className={`grid items-center gap-5 px-5 py-4 border rounded-lg transition-colors duration-150 cursor-pointer ${
-                    selectedScheduledTaskId === task.id
-                      ? "border-red-500 bg-[#1a1520] hover:border-red-400"
-                      : "bg-[#161b27] border-[#1e2535] hover:border-[#2a3550]"
-                  }`}
-                  style={{ gridTemplateColumns: "1.4fr 1.2fr 1.6fr auto" }}
-                  onClick={() =>
-                    setSelectedScheduledTaskId(
-                      selectedScheduledTaskId === task.id ? null : task.id,
-                    )
-                  }
-                >
-                  <span className="text-[0.95rem] font-semibold text-slate-100 truncate">
-                    {task.groupName}
-                  </span>
-                  <span className="text-sm font-normal text-slate-300 whitespace-nowrap">
-                    {task.starttime}
-                  </span>
-                  <span className="text-sm text-slate-400 truncate">
-                    {task.imageName}
-                  </span>
-                  <span className="text-[0.6rem] px-2.5 py-0.5 rounded-full bg-[#0d1f33] text-[#4a90d9] border border-[#1e3a5a] whitespace-nowrap tracking-[0.05em] justify-self-end">
-                    {task.type}
-                  </span>
-                </div>
+                  task={task}
+                  isSelected={selectedScheduledTaskId === task.id}
+                  onSelect={setSelectedScheduledTaskId}
+                />
               ))}
             </div>
           )}
@@ -335,78 +280,36 @@ export default function MulticastDashboard() {
 
         {/* ACTIVE HOSTS */}
         <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between border-b border-[#1e2535] pb-3">
-            <div className="flex items-center gap-2.5">
-              <div className="text-[0.7rem] font-semibold tracking-[0.15em] uppercase text-[#4a90d9]">
-                Active Hosts
-              </div>
-              <span
-                className={`text-[0.65rem] px-2.5 py-0.5 rounded-full tracking-[0.05em] ${
-                  enrichedTasks.length > 0
-                    ? "bg-[#0d2a1a] text-green-500 border border-green-800"
-                    : "bg-[#1e2535] text-slate-500"
-                }`}
-              >
-                {enrichedTasks.length > 0
+          <SectionHeader
+            title="Active Hosts"
+            badge={{
+              active: enrichedTasks.length > 0,
+              label:
+                enrichedTasks.length > 0
                   ? `${enrichedTasks.length} host${enrichedTasks.length > 1 ? "s" : ""} running`
-                  : "no active session"}
-              </span>
-            </div>
-            {enrichedTasks.length > 0 && (
-              <button
-                className="text-[0.6rem] font-semibold tracking-[0.08em] uppercase px-3 py-1 rounded border border-red-500 bg-transparent text-red-500 cursor-pointer transition-all duration-150 hover:not-disabled:bg-red-500 hover:not-disabled:text-white disabled:opacity-30 disabled:cursor-not-allowed"
-                disabled={isCancelling || !activeSessionId}
-                onClick={handleCancelActiveSession}
-              >
-                {isCancelling ? "Cancelling..." : "Cancel"}
-              </button>
-            )}
-          </div>
-
+                  : "no active session",
+            }}
+            cancelButton={
+              enrichedTasks.length > 0
+                ? {
+                    disabled: isCancelling || !activeSessionId,
+                    isLoading: isCancelling,
+                    onClick: handleCancelActiveSession,
+                  }
+                : undefined
+            }
+          />
           {!selectedGroupId || enrichedTasks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 text-[#2a3550] text-[0.75rem] tracking-[0.1em] uppercase py-8">
-              <span className="text-2xl opacity-30">⬡</span>
-              {!selectedGroupId
-                ? "Select a group to begin"
-                : "No active tasks for this group"}
-            </div>
+            <EmptyState
+              message={
+                !selectedGroupId ? "Select a group to begin" : "No active hosts"
+              }
+            />
           ) : (
             <div className="flex flex-col gap-2">
-              {enrichedTasks.map((task) => {
-                const state = TASK_STATES[task.stateID] ?? {
-                  label: `State ${task.stateID}`,
-                  color: "text-slate-400 bg-[#1e2535] border-[#2a3550]",
-                };
-                return (
-                  <div
-                    key={task.id}
-                    className="grid items-center gap-5 px-5 py-4 bg-[#161b27] border border-[#1e2535] rounded-lg transition-colors duration-150 hover:border-[#2a3550]"
-                    style={{ gridTemplateColumns: "1.4fr 1.6fr auto auto" }}
-                  >
-                    <span className="text-[0.95rem] font-semibold text-slate-100 truncate">
-                      {task.hostName}
-                    </span>
-                    <span className="text-sm text-slate-400 truncate">
-                      {task.imageName}
-                    </span>
-                    <span
-                      className={`text-[0.6rem] px-2.5 py-0.5 rounded-full border whitespace-nowrap tracking-[0.05em] ${state.color}`}
-                    >
-                      {state.label}
-                    </span>
-                    {task.pct !== undefined && task.pct !== "" ? (
-                      <span className="text-sm font-medium text-[#4a90d9] whitespace-nowrap justify-self-end">
-                        {Number(task.pct.slice(-3))}%
-                      </span>
-                    ) : (
-                      <div
-                        title="Running"
-                        className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_6px_#22c55e88] justify-self-end animate-pulse"
-                      />
-                    )}
-                  </div>
-                );
-              })}
+              {enrichedTasks.map((task) => (
+                <ActiveHostCard key={task.id} task={task} />
+              ))}
             </div>
           )}
         </div>
