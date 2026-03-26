@@ -18,7 +18,7 @@ FogGui is a Next.js 15 + TypeScript application that provides a web UI for FOG s
 - **`.gitignore`**: excludes build artifacts, env files, IDE data, and `user.db`.
 - **`.idea/`**: IntelliJ/WebStorm project metadata.
 - **`README.md`**: high-level technical docs (setup, architecture, API summary).
-- **`developer_guide.md`**: this file.
+- **`developer-guide.md`**: this file.
 - **`package.json`**: scripts (`dev`, `build`, `start`, `lint`) and project dependencies.
 - **`package-lock.json` / `pnpm-lock.yaml`**: lockfiles (both npm and pnpm are present).
 - **`pnpm-workspace.yaml`**: pnpm workspace/build settings (`sharp`, `sqlite3` built deps).
@@ -94,22 +94,27 @@ FogGui is a Next.js 15 + TypeScript application that provides a web UI for FOG s
 ### Action Endpoints
 
 - **`actions/list/tasktype/route.ts`**: list task types from FOG.
-- **`actions/tests/route.ts`**: connectivity/test endpoint (currently fetches a sample group).
+- **`actions/tests/route.ts`**: connectivity/test endpoint (currently fetches `/fog/group/41`).
 - **`actions/multicast/route.ts`**:
   - `POST`: immediate start or scheduled multicast, depending on payload.
   - `DELETE`: cancel active multicast session.
 - **`actions/multicast/sessions/route.ts`**: list active multicast sessions.
 - **`actions/multicast/scheduled/route.ts`**:
   - `GET`: list scheduled tasks from FOG.
-  - `DELETE`: cancel scheduled multicast task.
+  - `DELETE`: cancel scheduled multicast task (also marks local reconciliation record as cancelled).
 
 ---
 
 ## UI Components (`src/components/`)
 
-- **`MenuBar.tsx`**: top navigation with session-aware menu, role-based options, and logout flow.
+- **`MenuBar.tsx`**: top navigation with role-aware links and logout flow.
 - **`MenubarWrapper.tsx`**: hides menu on login page and while session is loading.
 - **`SessionProviderWrapper.tsx`**: wraps app with NextAuth `SessionProvider`.
+- **`DashboardSelectField.tsx`**: reusable select control used by the dashboard left panel.
+- **`DashboardSectionHeader.tsx`**: right-panel section title, badge, and cancel action UI.
+- **`DashboardEmptyState.tsx`**: empty-state placeholder for no selected group/no data.
+- **`DashboardScheduledTaskCard.tsx`**: selectable scheduled-task row/card rendering.
+- **`DashboardActiveHostsCard.tsx`**: active host task card rendering.
 
 ---
 
@@ -120,7 +125,7 @@ FogGui is a Next.js 15 + TypeScript application that provides a web UI for FOG s
 - **`useHosts.ts`**: hosts list state + loading/error.
 - **`useImages.ts`**: images list state + loading/error.
 - **`useGroupAssociations.ts`**: group-association state + loading/error.
-- **`useActiveTasks.ts`**: active task state + refetch; includes polling interval.
+- **`useActiveTasks.ts`**: active task state + refetch; includes 10-second polling interval.
 - **`useMulticastSessions.ts`**: multicast sessions state + refetch.
 - **`useScheduledMulticast.ts`**: scheduled tasks state + refetch.
 
@@ -135,8 +140,11 @@ These are fetch wrappers consumed by hooks. They map API/dummy payloads into typ
 - **`hostServices.ts`**: loads hosts from `/api/hosts` or `dummyData.json`.
 - **`groupAssociationServices.ts`**: loads associations from `/api/groupassociations` or dummy JSON.
 - **`activeTaskServices.ts`**: loads active tasks from `/api/tasks/active`.
-- **`multicastSessionServices.ts`**: loads active multicast sessions from `/api/actions/multicast/sessions`.
-- **`scheduledTaskServices.ts`**: loads scheduled multicast from `/api/actions/multicast/scheduled`.
+- **`multicastServices.ts`**:
+  - reads active multicast sessions from `/api/actions/multicast/sessions`.
+  - reads scheduled tasks from `/api/actions/multicast/scheduled`.
+  - creates multicast sessions (`POST /api/actions/multicast`).
+  - cancels active sessions and scheduled tasks (`DELETE` endpoints).
 
 ---
 
@@ -158,6 +166,8 @@ These are fetch wrappers consumed by hooks. They map API/dummy payloads into typ
 - **`reconScheduledTask.ts`**:
   - Background reconciliation loop (every 60s).
   - Finds upcoming scheduled tasks and pre-applies correct image/kernel device to hosts.
+- **`formatTime.ts`**: normalizes UI datetime-local input into FOG payload format.
+- **`taskStates.ts`**: shared task-state label/color map for UI rendering.
 
 ---
 
@@ -183,7 +193,7 @@ These are fetch wrappers consumed by hooks. They map API/dummy payloads into typ
 1. App starts → `instrumentation.ts` triggers DB migration + reconciliation scheduler.
 2. User signs in at `/` via NextAuth credentials backed by SQLite users table.
 3. Dashboard hooks call services, which call internal API routes.
-4. API routes proxy to FOG endpoints or local DB.
+4. API routes proxy to FOG endpoints or local DB (SQLite for users and scheduled task metadata).
 5. Multicast POST/DELETE APIs execute orchestration in `lib/fogTasks.ts`.
 6. Reconciliation job continuously guards scheduled-task image consistency before execution.
 
@@ -195,6 +205,6 @@ These are fetch wrappers consumed by hooks. They map API/dummy payloads into typ
 - Keep all FOG HTTP logic inside `src/lib/fogApi.ts` + route handlers for consistency.
 - Prefer extending `src/services/*` + `src/hooks/*` when adding dashboard data sources.
 - DB schema additions should be appended via `runMigrations()` in `src/app/api/database.ts`.
-- Due to FogAPI lack of documentation, trials and errors and reverse engineer with Fog Web Application (`<ip_address>/fog/management/index.php?node=home`) to guess the correct payload and API to work are valid methods.
+- Due to FogAPI documentation gaps, trial-and-error and reverse engineering from the FOG web app (`<ip_address>/fog/management/index.php?node=home`) are practical approaches for payload discovery.
 - The simplified API documentation can be found here: `https://news.fogproject.org/simplified-api-documentation/`
-- The forum is also a good source for trouble shootings and fixes: `https://forums.fogproject.org/`
+- The forum is also a good source for troubleshooting and fixes: `https://forums.fogproject.org/`
