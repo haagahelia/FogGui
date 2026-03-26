@@ -6,6 +6,8 @@ import { useActiveTasks } from "@/hooks/useActiveTasks";
 import { useMulticastSessions } from "@/hooks/useMulticastSessions";
 import { useScheduledMulticast } from "@/hooks/useScheduledMulticast";
 import { createMulticast } from "@/services/multicastServices";
+import { TASK_STATES } from "@/lib/taskStates";
+import { formatTime } from "@/lib/formatTime";
 
 export default function MulticastDashboard() {
   const { groups, images, hosts, groupAssociations, loading, error } =
@@ -38,14 +40,6 @@ export default function MulticastDashboard() {
     process.env.NEXT_PUBLIC_PRIMARY_DISK_VALUE_2,
   ].filter(Boolean);
 
-  const formatScheduledTime = (value: string) => {
-    if (!value) return undefined;
-    const [datePart, timePart] = value.split("T");
-    const [year, month, day] = datePart.split("-");
-    const time = timePart.length === 5 ? timePart + ":00" : timePart;
-    return `${year}-${month}-${day} ${time}`;
-  };
-
   const handleMulticast = async () => {
     if (!selectedGroupId || !selectedImageId || !selectedDisk) {
       alert("Please select a Group, Image, and Disk.");
@@ -61,12 +55,12 @@ export default function MulticastDashboard() {
         imageID: Number(selectedImageId),
         kernelDevice: selectedDisk,
         ...(scheduledStartTime && {
-          scheduledStartTime: formatScheduledTime(scheduledStartTime),
+          scheduledStartTime: formatTime(scheduledStartTime),
         }),
       });
       alert(
         scheduledStartTime
-          ? `Multicast scheduled for ${formatScheduledTime(scheduledStartTime)}!`
+          ? `Multicast scheduled for ${formatTime(scheduledStartTime)}!`
           : "Multicast started successfully!",
       );
       refetchActiveTasks();
@@ -77,32 +71,6 @@ export default function MulticastDashboard() {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const MULTICAST_STATES: Record<
-    number,
-    { label: string; color: string; dot?: string }
-  > = {
-    1: {
-      label: "Queuing",
-      color: "text-yellow-400 bg-[#2a1f00]    border-yellow-800",
-    },
-    2: {
-      label: "Check-in",
-      color: "text-orange-400 bg-[#2a1500]    border-orange-800",
-    },
-    3: {
-      label: "In-Progress",
-      color: "text-[#4a90d9]  bg-[#0d1f33]    border-[#1e3a5a]",
-    },
-    4: {
-      label: "Completed",
-      color: "text-green-400  bg-[#0d2a1a]    border-green-800",
-    },
-    5: {
-      label: "Cancelled",
-      color: "text-red-400    bg-[#2a0d0d]    border-red-800",
-    },
   };
 
   const associatedHostIDs = groupAssociations
@@ -405,7 +373,7 @@ export default function MulticastDashboard() {
           ) : (
             <div className="flex flex-col gap-2">
               {enrichedTasks.map((task) => {
-                const state = MULTICAST_STATES[task.stateID] ?? {
+                const state = TASK_STATES[task.stateID] ?? {
                   label: `State ${task.stateID}`,
                   color: "text-slate-400 bg-[#1e2535] border-[#2a3550]",
                 };
