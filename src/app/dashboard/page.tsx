@@ -5,15 +5,22 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import { useActiveTasks } from "@/hooks/useActiveTasks";
 import { useMulticastSessions } from "@/hooks/useMulticastSessions";
 import { useScheduledMulticast } from "@/hooks/useScheduledMulticast";
+import { createMulticast } from "@/services/multicastServices";
 
 export default function MulticastDashboard() {
   const { groups, images, hosts, groupAssociations, loading, error } =
     useDashboardData();
   const { activeTasks, refetch: refetchActiveTasks } = useActiveTasks();
-  const { multicastSessions, refetch: refetchSessions } =
-    useMulticastSessions();
-  const { scheduledMulticast, refetch: refetchScheduledMulticast } =
-    useScheduledMulticast();
+  const {
+    multicastSessions,
+    refetch: refetchSessions,
+    cancelActiveSession,
+  } = useMulticastSessions();
+  const {
+    scheduledMulticast,
+    refetch: refetchScheduledMulticast,
+    cancelScheduledMulticast,
+  } = useScheduledMulticast();
 
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [selectedImageId, setSelectedImageId] = useState("");
@@ -49,28 +56,19 @@ export default function MulticastDashboard() {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch("/api/actions/multicast", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          groupID: Number(selectedGroupId),
-          imageID: Number(selectedImageId),
-          kernelDevice: selectedDisk,
-          ...(scheduledStartTime && {
-            scheduledStartTime: formatScheduledTime(scheduledStartTime),
-          }),
+      await createMulticast({
+        groupID: Number(selectedGroupId),
+        imageID: Number(selectedImageId),
+        kernelDevice: selectedDisk,
+        ...(scheduledStartTime && {
+          scheduledStartTime: formatScheduledTime(scheduledStartTime),
         }),
       });
-
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Server Error");
-
       alert(
         scheduledStartTime
           ? `Multicast scheduled for ${formatScheduledTime(scheduledStartTime)}!`
           : "Multicast started successfully!",
       );
-
       refetchActiveTasks();
       refetchSessions();
       refetchScheduledMulticast();
@@ -146,21 +144,16 @@ export default function MulticastDashboard() {
       alert("Please select a scheduled task to cancel.");
       return;
     }
+
     if (!window.confirm("Are you sure you want to cancel this scheduled task?"))
       return;
 
     setIsCancellingScheduled(true);
+
     try {
-      const response = await fetch("/api/actions/multicast/scheduled", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scheduledTaskID: selectedScheduledTaskId }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Server Error");
+      await cancelScheduledMulticast(selectedScheduledTaskId);
       alert("Scheduled task cancelled successfully!");
       setSelectedScheduledTaskId(null);
-      refetchScheduledMulticast();
     } catch (err: any) {
       alert(`Error: ${err.message}`);
     } finally {
@@ -173,6 +166,7 @@ export default function MulticastDashboard() {
       alert("No active session found for this group.");
       return;
     }
+
     if (
       !window.confirm(
         "Are you sure you want to cancel active tasks for this group?",
@@ -182,16 +176,9 @@ export default function MulticastDashboard() {
 
     setIsCancelling(true);
     try {
-      const response = await fetch("/api/actions/multicast", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionID: activeSessionId }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Server Error");
-      alert("Tasks cancelled successfully!");
+      await cancelActiveSession(activeSessionId);
       refetchActiveTasks();
-      refetchSessions();
+      alert("Tasks cancelled successfully!");
     } catch (err: any) {
       alert(`Error: ${err.message}`);
     } finally {
