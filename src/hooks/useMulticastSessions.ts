@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { MulticastSession } from "@/types/task";
-import { getMulticastSessions } from "@/services/multicastSessionServices";
+import {
+  getMulticastSessions,
+  deleteMulticastSession,
+} from "@/services/multicastServices";
 
 export function useMulticastSessions() {
   const [multicastSessions, setMulticastSessions] = useState<
@@ -24,5 +27,10 @@ export function useMulticastSessions() {
 
   const refetch = () => setTrigger((t) => t + 1);
 
-  return { multicastSessions, loading, error, refetch };
+  const cancelActiveSession = async (sessionID: number) => {
+    await deleteMulticastSession(sessionID);
+    refetch();
+  };
+
+  return { multicastSessions, loading, error, refetch, cancelActiveSession };
 }

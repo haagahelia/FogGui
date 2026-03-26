@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { ScheduledTask } from "@/types/task";
-import { getScheduledMulticast } from "@/services/scheduledTaskServices";
+import {
+  getScheduledMulticast,
+  deleteScheduledMulticast,
+} from "@/services/multicastServices";
 
 export function useScheduledMulticast() {
   const [scheduledMulticast, setScheduledMulticast] = useState<ScheduledTask[]>(
@@ -24,5 +27,16 @@ export function useScheduledMulticast() {
 
   const refetch = () => setTrigger((t) => t + 1);
 
-  return { scheduledMulticast, loading, error, refetch };
+  const cancelScheduledMulticast = async (scheduledTaskID: number) => {
+    await deleteScheduledMulticast(scheduledTaskID);
+    refetch();
+  };
+
+  return {
+    scheduledMulticast,
+    loading,
+    error,
+    refetch,
+    cancelScheduledMulticast,
+  };
 }
