@@ -38,7 +38,7 @@ export async function startGroupMulticast(
     .filter((a: any) => Number(a.groupID) === groupID)
     .map((a: any) => Number(a.hostID));
 
-  console.log(hostIDs);
+  // console.log(hostIDs);
 
   if (hostIDs.length === 0) {
     throw new MulticastError("No hosts associated with the selected group.");
@@ -156,8 +156,8 @@ export async function scheduleGroupMulticast(
     isGroupTask: "1",
     hostID: groupID,
     scheduleTime,
-    type: "Delayed",
-    isActive: "Yes",
+    type: "S",
+    isActive: "1",
     shutdown: "",
     other2: "-1",
     other4: "1",

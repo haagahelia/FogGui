@@ -98,7 +98,7 @@ export interface ScheduledTaskPayload {
   isGroupTask: string;
   hostID: number;
   scheduleTime: number;
-  type: "Delayed";
+  type: "S";
   isActive: string;
   shutdown: string;
   other2: string;
