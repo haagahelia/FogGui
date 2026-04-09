@@ -7,6 +7,7 @@ import { useMulticastSessions } from "@/hooks/useMulticastSessions";
 import { useScheduledMulticast } from "@/hooks/useScheduledMulticast";
 import { createMulticast } from "@/services/multicastServices";
 import { formatTime } from "@/lib/formatTime";
+import { getErrorMessage } from "@/lib/errorHandler";
 
 import { SelectField } from "@/components/DashboardSelectField";
 import { SectionHeader } from "@/components/DashboardSectionHeader";
@@ -40,20 +41,26 @@ export default function MulticastDashboard() {
   >(null);
   const [isCancellingScheduled, setIsCancellingScheduled] = useState(false);
 
+  // Gets available disk devices from environment variables
   const diskOptions = [
     process.env.NEXT_PUBLIC_PRIMARY_DISK_VALUE_1,
     process.env.NEXT_PUBLIC_PRIMARY_DISK_VALUE_2,
   ].filter(Boolean);
 
+  // MULTICAST CREATION HANDLER: Handles starting or scheduling a new multicast deployment
   const handleMulticast = async () => {
+    // Validation
     if (!selectedGroupId || !selectedImageId || !selectedDisk) {
       alert("Please select a Group, Image, and Disk.");
       return;
     }
+
     if (!window.confirm("Are you sure you want to start the multicast?"))
       return;
 
     setIsSubmitting(true);
+
+    // Call API to create multicast (immediate or scheduled)
     try {
       await createMulticast({
         groupID: Number(selectedGroupId),
@@ -63,29 +70,35 @@ export default function MulticastDashboard() {
           scheduledStartTime: formatTime(scheduledStartTime),
         }),
       });
+
       alert(
         scheduledStartTime
           ? `Multicast scheduled for ${formatTime(scheduledStartTime)}!`
           : "Multicast started successfully!",
       );
+
+      // Refresh all related data to show updates in UI
       refetchActiveTasks();
       refetchSessions();
       refetchScheduledMulticast();
-    } catch (err: any) {
-      alert(`Error: ${err.message}`);
+    } catch (error) {
+      alert(`Error: ${getErrorMessage(error)}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Find all hosts (computers) that belong to the selected group
   const associatedHostIDs = groupAssociations
     .filter((assoc) => assoc.groupID === Number(selectedGroupId))
     .map((assoc) => assoc.hostID);
 
+  // Filter active tasks to only show those running on hosts in the selected group
   const activeTasksForSelectedGroup = activeTasks.filter((task) =>
     associatedHostIDs.includes(task.hostID),
   );
 
+  // Enhance task data by looking up host and image names (instead of just IDs)
   const enrichedTasks = activeTasksForSelectedGroup.map((task) => {
     const host = hosts.find((h) => h.id === task.hostID);
     const image = images.find((img) => img.id === task.imageID);
@@ -96,10 +109,12 @@ export default function MulticastDashboard() {
     };
   });
 
+  // Find the active multicast session ID for the selected group
   const activeSessionId =
     multicastSessions.find((s) => enrichedTasks.some((t) => t.name === s.name))
       ?.id ?? null;
 
+  // Filter scheduled multicasts to only show those for the selected group
   const scheduledTasksForGroup = scheduledMulticast
     .filter((s) => String(s.hostID) === selectedGroupId)
     .map((s) => {
@@ -112,6 +127,7 @@ export default function MulticastDashboard() {
       };
     });
 
+  // Handles cancelling a scheduled multicast task
   const handleCancelScheduled = async () => {
     if (!selectedScheduledTaskId) {
       alert("Please select a scheduled task to cancel.");
@@ -122,17 +138,19 @@ export default function MulticastDashboard() {
       return;
 
     setIsCancellingScheduled(true);
+
     try {
       await cancelScheduledMulticast(selectedScheduledTaskId);
       alert("Scheduled task cancelled successfully!");
       setSelectedScheduledTaskId(null);
-    } catch (err: any) {
-      alert(`Error: ${err.message}`);
+    } catch (error) {
+      alert(`Error: ${getErrorMessage(error)}`);
     } finally {
       setIsCancellingScheduled(false);
     }
   };
 
+  // Handles cancelling currently running multicast tasks for a group
   const handleCancelActiveSession = async () => {
     if (!activeSessionId) {
       alert("No active session found for this group.");
@@ -147,12 +165,13 @@ export default function MulticastDashboard() {
       return;
 
     setIsCancelling(true);
+
     try {
       await cancelActiveSession(activeSessionId);
       refetchActiveTasks();
       alert("Tasks cancelled successfully!");
-    } catch (err: any) {
-      alert(`Error: ${err.message}`);
+    } catch (error) {
+      alert(`Error: ${getErrorMessage(error)}`);
     } finally {
       setIsCancelling(false);
     }
