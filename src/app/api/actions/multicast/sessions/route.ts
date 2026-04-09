@@ -1,4 +1,5 @@
 import { fogFetchJson } from "@/lib/fogApi";
+import { createErrorResponse } from "@/lib/errorHandler";
 
 // GET /api/actions/multicast/sessions
 export async function GET() {
@@ -11,16 +12,8 @@ export async function GET() {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Full Error", error);
-    return new Response(
-      JSON.stringify({
-        error: error.message || "Failed to fetch multicast sessions",
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return createErrorResponse(error);
   }
 }

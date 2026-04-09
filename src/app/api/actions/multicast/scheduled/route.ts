@@ -1,5 +1,6 @@
 import { fogFetchJson } from "@/lib/fogApi";
 import { cancelScheduledTask } from "@/lib/fogTasks";
+import { createErrorResponse, ApiError } from "@/lib/errorHandler";
 
 // GET /api/actions/multicast/scheduled
 export async function GET() {
@@ -12,8 +13,8 @@ export async function GET() {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-  } catch (error: any) {
-    return new Response(error.message, { status: 500 });
+  } catch (error) {
+    return createErrorResponse(error);
   }
 }
 
@@ -24,26 +25,17 @@ export async function DELETE(req: Request) {
     const { scheduledTaskID } = body;
 
     if (!scheduledTaskID) {
-      return new Response(
-        JSON.stringify({ error: "scheduleTaskID is required." }),
-        {
-          status: 400,
-        },
-      );
+      throw new ApiError("scheduledTaskID is required.", 400);
     }
 
     const result = await cancelScheduledTask(scheduledTaskID);
 
     return new Response(JSON.stringify(result), {
       status: 200,
+      headers: { "Content-Type": "application/json" },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Full Error ", error);
-    return new Response(
-      JSON.stringify({
-        error: error.message || "Cancel Scheduled Multicast Failed",
-      }),
-      { status: 400 },
-    );
+    return createErrorResponse(error);
   }
 }

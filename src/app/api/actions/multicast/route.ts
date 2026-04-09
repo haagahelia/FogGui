@@ -3,6 +3,7 @@ import {
   cancelGroupMulticast,
   scheduleGroupMulticast,
 } from "@/lib/fogTasks";
+import { createErrorResponse, ApiError } from "@/lib/errorHandler";
 
 // POST /api/actions/multicast
 export async function POST(req: Request) {
@@ -11,11 +12,9 @@ export async function POST(req: Request) {
     const { groupID, imageID, kernelDevice, scheduledStartTime } = body;
 
     if (!groupID || !imageID || !kernelDevice) {
-      return new Response(
-        JSON.stringify({
-          error: "groupID, imageID, and kernelDevice are all required.",
-        }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
+      throw new ApiError(
+        "groupID, imageID, and kernelDevice are all required.",
+        400,
       );
     }
 
@@ -36,11 +35,8 @@ export async function POST(req: Request) {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-  } catch (error: any) {
-    return new Response(
-      JSON.stringify({ error: error.message || "Multicast failed" }),
-      { status: 400, headers: { "Content-Type": "application/json" } },
-    );
+  } catch (error) {
+    return createErrorResponse(error);
   }
 }
 
@@ -51,23 +47,17 @@ export async function DELETE(req: Request) {
     const { sessionID } = body;
 
     if (!sessionID) {
-      return new Response(JSON.stringify({ error: "sessionID is required." }), {
-        status: 400,
-      });
+      throw new ApiError("sessionID is required.", 400);
     }
 
     const result = await cancelGroupMulticast(sessionID);
 
     return new Response(JSON.stringify(result), {
       status: 200,
+      headers: { "Content-Type": "application/json" },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Full Error ", error);
-    return new Response(
-      JSON.stringify({
-        error: error.message || "Cancel Group Multicast Failed",
-      }),
-      { status: 400 },
-    );
+    return createErrorResponse(error);
   }
 }

@@ -1,15 +1,16 @@
 import { fogFetchJson } from "@/lib/fogApi";
+import { createErrorResponse } from "@/lib/errorHandler";
 
 // GET /api/tasks - Get all tasks
 export async function GET() {
   try {
-    const groups = await fogFetchJson("/fog/task", { method: "GET" });
+    const tasks = await fogFetchJson("/fog/task", { method: "GET" });
 
-    return new Response(JSON.stringify(groups), {
+    return new Response(JSON.stringify(tasks), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-  } catch (error: any) {
-    return new Response(error.message, { status: 500 });
+  } catch (error) {
+    return createErrorResponse(error);
   }
 }

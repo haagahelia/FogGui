@@ -1,4 +1,5 @@
 import { fogFetchJson } from "@/lib/fogApi";
+import { createErrorResponse } from "@/lib/errorHandler";
 
 // GET /api/tasks/active - Get active tasks
 export async function GET() {
@@ -11,7 +12,7 @@ export async function GET() {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-  } catch (error: any) {
-    return new Response(error.message, { status: 500 });
+  } catch (error) {
+    return createErrorResponse(error);
   }
 }
