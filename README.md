@@ -118,6 +118,17 @@ Obtain FOG API credentials from the FOG Management Panel:
 - **User Key:** Found in User Settings or API Access.
 - **API Token:** Found in Security or API Tokens.
 
+### 4.4 First Login
+
+After initialization, the system will create a sqlite user database and its first user.
+
+```
+username: admin
+password: admin
+```
+
+**After the first login, you must change the password immediately.**
+
 ## 5. Usage Guide
 
 ### 5.1 User Interface Overview
@@ -156,7 +167,7 @@ FogGui/
 │ │
 │ ├── components/   # Reusable React components
 │ ├── hooks/        # Custom React hooks
-│ ├── lib/          # Core utilities (auth, db, helper functions)
+│ ├── lib/          # Core utilities (auth, db, helper functions, error handler functions)
 │ ├── services/     # API service layer
 │ ├── types/        # TypeScript type definitions
 │ └── styles/       # Global styles

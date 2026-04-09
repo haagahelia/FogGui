@@ -154,7 +154,7 @@ These are fetch wrappers consumed by hooks. They map API/dummy payloads into typ
   - NextAuth credentials provider config.
   - Validates users from SQLite + bcrypt.
   - Adds `id`, `username`, `role` to JWT/session.
-- **`db.tsx`**:
+- **`db.ts`**:
   - `openDb()` helper using `sqlite` package.
   - Promise wrappers (`dbRun`, `dbAll`) around sqlite3 operations.
 - **`fogApi.ts`**:
@@ -168,6 +168,7 @@ These are fetch wrappers consumed by hooks. They map API/dummy payloads into typ
   - Finds upcoming scheduled tasks and pre-applies correct image/kernel device to hosts.
 - **`formatTime.ts`**: normalizes UI datetime-local input into FOG payload format.
 - **`taskStates.ts`**: shared task-state label/color map for UI rendering.
+- **`errorHandler.ts`**: handle errors catching.
 
 ---
 
