@@ -116,7 +116,7 @@ export default function MulticastDashboard() {
 
   // Filter scheduled multicasts to only show those for the selected group
   const scheduledTasksForGroup = scheduledMulticast
-    .filter((s) => String(s.hostID) === selectedGroupId)
+    .filter((s) => String(s.hostID) === selectedGroupId && s.isActive === "Yes")
     .map((s) => {
       const group = groups.find((g) => g.id === Number(selectedGroupId));
       const image = images.find((img) => img.id === s.imageID);
@@ -223,7 +223,7 @@ export default function MulticastDashboard() {
         {/* Scheduled Start Time */}
         <div className="flex flex-col gap-1.5">
           <label className="text-[0.65rem] font-medium tracking-[0.1em] uppercase text-slate-400">
-            WIP - Scheduled Start Time{" "}
+            Scheduled Start Time{" "}
             <span className="text-slate-600 font-normal">(optional)</span>
           </label>
           <input
