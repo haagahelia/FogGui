@@ -209,3 +209,4 @@ These are fetch wrappers consumed by hooks. They map API/dummy payloads into typ
 - Due to FogAPI documentation gaps, trial-and-error and reverse engineering from the FOG web app (`<ip_address>/fog/management/index.php?node=home`) are practical approaches for payload discovery.
 - The simplified API documentation can be found here: `https://news.fogproject.org/simplified-api-documentation/`
 - The forum is also a good source for troubleshooting and fixes: `https://forums.fogproject.org/`
+- Immediate and Schedule Multicast works. Further development can start at implement security and quality (`https://github.com/haagahelia/FogGui/security/dependabot`)
