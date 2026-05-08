@@ -207,10 +207,19 @@ FogGui/
 
 ```bash
 # Build the application
-pnpm build
+npm run build
 
 # Start the production server
-pnpm start
+npx pm2 start npm --name "FogGui" -- start
+
+# Check production server status
+npx pm2 status
+
+# Stop the production server
+npx pm2 stop FogGui
+
+# Restart the production server
+npx pm2 restart FogGui
 ```
 
 ## 9. Support and Maintenance
